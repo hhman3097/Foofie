@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% block title %}🌍 Foofie 美食地球{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+    body { margin: 0; overflow: hidden; background: #000; }
+    nav, .fixed { display: none !important; }
+    #info-tooltip {
+        position: fixed;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        pointer-events: none;
+        z-index: 100;
+        display: none;
+        white-space: nowrap;
+    }
+    #back-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 50;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 24px;
+        font-size: 14px;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        transition: background 0.2s;
+    }
+    #back-btn:hover { background: rgba(0,0,0,0.8); }
+    #count-badge {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 50;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 24px;
+        font-size: 14px;
+        backdrop-filter: blur(4px);
+    }
+    #detail-popup {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 50;
+        background: rgba(0,0,0,0.85);
+        backdrop-filter: blur(8px);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 16px;
+        display: none;
+        max-width: 320px;
+        width: 90%;
+        text-align: center;
+    }
+    #detail-popup h3 { margin: 0; font-size: 18px; font-weight: bold; }
+    #detail-popup p { margin: 4px 0 0; font-size: 14px; opacity: 0.8; }
+    #detail-popup a {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 6px 16px;
+        background: #f97316;
+        color: white;
+        border-radius: 20px;
+        text-decoration: none;
+        font-size: 13px;
+    }
+    #detail-popup a:hover { background: #ea580c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<button id="back-btn" onclick="window.location.href='/'">← 返回列表</button>
+<div id="count-badge">🌍 <span id="record-count">0</span> 道美食</div>
+<div id="info-tooltip"></div>
+<div id="detail-popup"></div>
+
+<script>
+// 地球配置
+const EARTH_RADIUS = 100;
+const MARKER_SIZE = 6;
+const ROTATION_SPEED = 0.0005;
+
+// 初始化场景
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+camera.position.set(0, 50, 280);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+// 星空背景
+const starsGeometry = new THREE.BufferGeometry();
+const starsCount = 3000;
+const starPositions = new Float32Array(starsCount * 3);
+for (let i = 0; i < starsCount * 3; i++) {
+    starPositions[i] = (Math.random() - 0.5) * 2000;
+}
+starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8 });
+const stars = new THREE.Points(starsGeometry, starsMaterial);
+scene.add(stars);
+
+// 地球纹理
+const textureLoader = new THREE.TextureLoader();
+const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
+const earthMaterial = new THREE.MeshPhongMaterial({
+    map: textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
+    specularMap: textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg'),
+    specular: new THREE.Color('grey'),
+    shininess: 5,
+});
+const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+scene.add(earth);
+
+// 云层
+const cloudGeometry = new THREE.SphereGeometry(EARTH_RADIUS * 1.01, 64, 64);
+const cloudMaterial = new THREE.MeshPhongMaterial({
+    map: textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png'),
+    transparent: true,
+    opacity: 0.15,
+});
+const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+scene.add(clouds);
+
+// 光照
+const ambientLight = new THREE.AmbientLight(0x333333);
+scene.add(ambientLight);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(5, 3, 5);
+scene.add(directionalLight);
+const backLight = new THREE.DirectionalLight(0x4466ff, 0.3);
+backLight.position.set(-5, 0, -5);
+scene.add(backLight);
+
+// 标记点管理
+const markers = [];
+const markerObjects = [];
+
+function latLngToPosition(lat, lng, radius) {
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (lng + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+        -radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta),
+    );
+}
+
+function getMarkerColor(rating) {
+    if (rating <= 2) return 0xff4444;
+    if (rating <= 3) return 0xffaa44;
+    return 0x44ff88;
+}
+
+function createMarker(data) {
+    const pos = latLngToPosition(data.latitude, data.longitude, EARTH_RADIUS);
+    const color = getMarkerColor(data.rating);
+
+    // 发光光晕
+    const glowGeo = new THREE.SphereGeometry(MARKER_SIZE * 1.5, 16, 16);
+    const glowMat = new THREE.MeshBasicMaterial({
+        color: color, transparent: true, opacity: 0.25,
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.copy(pos);
+    scene.add(glow);
+
+    // 核心球
+    const coreGeo = new THREE.SphereGeometry(MARKER_SIZE, 16, 16);
+    const coreMat = new THREE.MeshBasicMaterial({ color: color });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    core.position.copy(pos);
+    scene.add(core);
+
+    // 脉冲光环
+    const ringGeo = new THREE.RingGeometry(MARKER_SIZE * 1.8, MARKER_SIZE * 2.5, 32);
+    const ringMat = new THREE.MeshBasicMaterial({
+        color: color, transparent: true, opacity: 0.4, side: THREE.DoubleSide,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.copy(pos);
+    ring.lookAt(new THREE.Vector3(0, 0, 0));
+    scene.add(ring);
+
+    // 连线
+    const linePoints = [
+        pos.clone().multiplyScalar(1.05),
+        pos.clone().multiplyScalar(1.3),
+    ];
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(linePoints);
+    const lineMat = new THREE.LineBasicMaterial({
+        color: color, transparent: true, opacity: 0.2,
+    });
+    const line = new THREE.Line(lineGeo, lineMat);
+    scene.add(line);
+
+    markerObjects.push({ glow, core, ring, line, data, basePos: pos.clone(), pulsePhase: Math.random() * Math.PI * 2 });
+}
+
+// 射线检测（交互）
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let selectedMarker = null;
+let isPointerDown = false;
+let pointerMoved = false;
+let pointerStart = { x: 0, y: 0 };
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+    isPointerDown = true;
+    pointerMoved = false;
+    pointerStart.x = e.clientX;
+    pointerStart.y = e.clientY;
+});
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+    if (isPointerDown) {
+        const dx = e.clientX - pointerStart.x;
+        const dy = e.clientY - pointerStart.y;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            pointerMoved = true;
+        }
+    }
+
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const cores = markerObjects.map(m => m.core);
+    const intersects = raycaster.intersectObjects(cores);
+
+    const tooltip = document.getElementById('info-tooltip');
+    if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        const marker = markerObjects.find(m => m.core === obj);
+        if (marker) {
+            tooltip.textContent = `${marker.data.dish_name} — ${marker.data.restaurant}`;
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY - 10) + 'px';
+            renderer.domElement.style.cursor = 'pointer';
+            return;
+        }
+    }
+    tooltip.style.display = 'none';
+    renderer.domElement.style.cursor = 'grab';
+});
+
+renderer.domElement.addEventListener('pointerup', (e) => {
+    if (pointerMoved) return;
+
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const cores = markerObjects.map(m => m.core);
+    const intersects = raycaster.intersectObjects(cores);
+
+    const popup = document.getElementById('detail-popup');
+    if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        const marker = markerObjects.find(m => m.core === obj);
+        if (marker) {
+            const d = marker.data;
+            const thumbHtml = d.thumbnail_path
+                ? `<img src="${d.thumbnail_path}" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:8px;margin:8px auto;">`
+                : '';
+            popup.innerHTML = `
+                <h3>${d.dish_name}</h3>
+                <p>🏪 ${d.restaurant}</p>
+                <p>⭐ ${d.rating}</p>
+                ${thumbHtml}
+                <a href="/record/${d.id}">查看详情 →</a>
+            `;
+            popup.style.display = 'block';
+            return;
+        }
+    }
+    popup.style.display = 'none';
+    isPointerDown = false;
+});
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// 加载数据
+async function loadRecords() {
+    try {
+        const resp = await fetch('/api/records');
+        const records = await resp.json();
+        document.getElementById('record-count').textContent = records.length;
+        records.forEach(r => createMarker(r));
+    } catch (err) {
+        console.error('Failed to load records:', err);
+    }
+}
+
+loadRecords();
+
+// 拖拽旋转
+let isUserInteracting = false;
+let onPointerDownMouseX = 0;
+let onPointerDownMouseY = 0;
+let lon = 0;
+let lat = 30;
+let onPointerDownLon = 0;
+let onPointerDownLat = 0;
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+    isUserInteracting = true;
+    onPointerDownMouseX = e.clientX;
+    onPointerDownMouseY = e.clientY;
+    onPointerDownLon = lon;
+    onPointerDownLat = lat;
+});
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+    if (isUserInteracting) {
+        lon = (onPointerDownMouseX - e.clientX) * 0.3 + onPointerDownLon;
+        lat = (e.clientY - onPointerDownMouseY) * 0.3 + onPointerDownLat;
+        lat = Math.max(-85, Math.min(85, lat));
+    }
+});
+
+renderer.domElement.addEventListener('pointerup', () => {
+    isUserInteracting = false;
+});
+
+// 滚轮缩放
+renderer.domElement.addEventListener('wheel', (e) => {
+    camera.position.z += e.deltaY * 0.3;
+    camera.position.z = Math.max(120, Math.min(500, camera.position.z));
+});
+
+// 触控缩放
+let lastTouchDist = 0;
+renderer.domElement.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+        lastTouchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+    }
+});
+renderer.domElement.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+        const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        const delta = lastTouchDist - dist;
+        camera.position.z += delta * 0.5;
+        camera.position.z = Math.max(120, Math.min(500, camera.position.z));
+        lastTouchDist = dist;
+    }
+});
+
+// 动画循环
+let time = 0;
+function animate() {
+    requestAnimationFrame(animate);
+    time += 0.01;
+
+    if (!isUserInteracting) {
+        lon += ROTATION_SPEED * 60;
+    }
+
+    clouds.rotation.y += 0.0003;
+
+    markerObjects.forEach((m) => {
+        const phase = m.pulsePhase;
+        const pulse = 1 + Math.sin(time * 2 + phase) * 0.15;
+        m.glow.scale.set(pulse, pulse, pulse);
+        m.glow.material.opacity = 0.2 + Math.sin(time * 2 + phase) * 0.1;
+        m.ring.scale.set(pulse * 0.8, pulse * 0.8, pulse * 0.8);
+        m.ring.material.opacity = 0.3 + Math.sin(time * 2 + phase) * 0.15;
+    });
+
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = lon * Math.PI / 180;
+    const radius = camera.position.z;
+    camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = radius * Math.cos(phi);
+    camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+    renderer.render(scene, camera);
+}
+
+animate();
+</script>
+{% endblock %}

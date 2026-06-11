@@ -226,4 +226,8 @@ def globe(request: Request):
 
 @app.get("/api/records")
 def api_records():
-    return get_records_json()
+    records = get_records_json()
+    for r in records:
+        if r["thumbnail_path"]:
+            r["thumbnail_path"] = f"/thumbnails/{r['thumbnail_path']}"
+    return records
