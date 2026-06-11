@@ -7,12 +7,12 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from database import (
+from foofie.database import (
     init_db, get_all_records, get_records_by_restaurant,
     get_record_by_id, search_records, insert_record,
     update_record, delete_record, get_cuisine_tags, get_records_json,
 )
-from photo_utils import validate_photo, save_photo, delete_photo
+from foofie.photo_utils import validate_photo, save_photo, delete_photo
 
 app = FastAPI(title="Foofie")
 
