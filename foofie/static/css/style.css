@@ -1,0 +1,54 @@
+/* 星星评分 */
+.star-rating input {
+    display: none;
+}
+.star-rating label {
+    font-size: 1.5rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+    color: #f59e0b;
+}
+.star-rating {
+    direction: rtl;
+    display: inline-flex;
+    gap: 2px;
+}
+
+/* 卡片悬停效果 */
+.record-card {
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.record-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* 标签气泡 */
+.tag-badge {
+    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+/* 3D 地球全屏 */
+.globe-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+}
+
+/* 移动端适配 */
+@media (max-width: 767px) {
+    .star-rating label {
+        font-size: 1.8rem; /* 移动端点击区域更大 */
+    }
+    .record-card {
+        margin-bottom: 0.75rem;
+    }
+}
