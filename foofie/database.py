@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from datetime import date
+from contextlib import closing
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "foofie.db")
 
@@ -180,7 +180,7 @@ def get_cuisine_tags() -> list[str]:
 
 
 def get_records_json() -> list[dict]:
-    """返回用于 3D 地球的 JSON 数据"""
+    """返回用于 3D 地球的 JSON 数据（不含 URL 前缀，由 API 层处理）"""
     rows = get_all_records()
     result = []
     for r in rows:
@@ -194,6 +194,6 @@ def get_records_json() -> list[dict]:
             "location_name": r["location_name"],
             "rating": r["rating"],
             "date_eaten": r["date_eaten"],
-            "thumbnail_path": f"/thumbnails/{r['thumbnail_path']}" if r["thumbnail_path"] else "",
+            "thumbnail_path": r["thumbnail_path"] or "",
         })
     return result
