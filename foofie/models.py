@@ -11,7 +11,7 @@ class FoodRecordCreate(BaseModel):
     longitude: float = Field(..., ge=-180, le=180)
     location_name: str = ""
     rating: int = Field(..., ge=1, le=5)
-    date_eaten: str = ""  # YYYY-MM-DD, 默认为当天
+    date_eaten: str = ""  # YYYY-MM-DD, 前端默认当天，后端可接受空字符串
     comment: str = ""
 
 

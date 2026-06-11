@@ -39,7 +39,18 @@ def init_db():
     conn.close()
 
 
+ALLOWED_ORDERS = {
+    "date_eaten DESC", "date_eaten ASC",
+    "rating DESC", "rating ASC",
+    "restaurant ASC", "restaurant DESC",
+    "dish_name ASC", "dish_name DESC",
+    "created_at DESC", "created_at ASC",
+}
+
+
 def get_all_records(order_by: str = "date_eaten DESC") -> list[sqlite3.Row]:
+    if order_by not in ALLOWED_ORDERS:
+        order_by = "date_eaten DESC"
     conn = get_connection()
     rows = conn.execute(f"SELECT * FROM food_records ORDER BY {order_by}").fetchall()
     conn.close()
