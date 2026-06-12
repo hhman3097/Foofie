@@ -219,7 +219,7 @@ function getLocation() {
             var errorEl = document.getElementById('location-error');
             errorEl.textContent = msg;
             errorEl.classList.remove('hidden');
-        }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+        }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
     } catch (e) {
         status.textContent = '请点击「重新定位」按钮获取位置';
     }
