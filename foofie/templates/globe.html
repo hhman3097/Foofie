@@ -8,82 +8,92 @@
     <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a1a; font-family: -apple-system, system-ui, sans-serif; }
-        #map { width: 100%; height: 100%; }
-
-        /* 去掉 maplibre 默认 logo/attribution（保留 attribution 法律要求） */
-        .maplibregl-ctrl-attrib {
-            background: rgba(0,0,0,0.5) !important;
-            color: rgba(255,255,255,0.5) !important;
-            font-size: 10px !important;
-            padding: 2px 8px !important;
-            border-radius: 4px !important;
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #0a0a2e;
+            font-family: -apple-system, system-ui, sans-serif;
         }
-        .maplibregl-ctrl-attrib a { color: rgba(255,255,255,0.6) !important; }
+        #map { width: 100%; height: 100%; position: relative; z-index: 1; }
+
+        .maplibregl-ctrl-attrib {
+            background: rgba(0,0,0,0.4) !important;
+            font-size: 10px !important;
+            padding: 2px 6px !important;
+        }
 
         #back-btn {
-            position: fixed; top: 20px; left: 20px; z-index: 10;
-            background: rgba(0,0,0,0.6); color: white; border: none;
-            padding: 10px 18px; border-radius: 24px; font-size: 14px;
-            cursor: pointer; backdrop-filter: blur(6px);
+            position: fixed; top: 16px; left: 16px; z-index: 20;
+            background: rgba(0,0,0,0.55); color: white; border: none;
+            padding: 8px 16px; border-radius: 20px; font-size: 13px;
+            cursor: pointer; backdrop-filter: blur(6px); letter-spacing: 0.3px;
         }
-        #back-btn:hover { background: rgba(0,0,0,0.8); }
+        #back-btn:hover { background: rgba(0,0,0,0.75); }
 
         #count-badge {
-            position: fixed; top: 20px; right: 20px; z-index: 10;
-            background: rgba(0,0,0,0.6); color: white; padding: 8px 16px;
-            border-radius: 24px; font-size: 14px; backdrop-filter: blur(6px);
+            position: fixed; top: 16px; right: 16px; z-index: 20;
+            background: rgba(0,0,0,0.55); color: white;
+            padding: 8px 14px; border-radius: 20px; font-size: 13px;
+            backdrop-filter: blur(6px);
         }
 
-        /* 弹窗 */
         #detail-popup {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 10; background: rgba(10,10,10,0.92); backdrop-filter: blur(14px);
-            color: white; padding: 20px 28px; border-radius: 20px;
-            display: none; max-width: 360px; width: 90%; text-align: center;
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 8px 36px rgba(0,0,0,0.5);
+            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+            z-index: 20; background: rgba(12,12,14,0.94); backdrop-filter: blur(16px);
+            color: white; padding: 18px 26px; border-radius: 18px;
+            display: none; max-width: 340px; width: 90%; text-align: center;
+            border: 1px solid rgba(255,255,255,0.07);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
             cursor: pointer;
+            animation: popupIn 0.25s ease-out;
         }
-        #detail-popup .dish-name { font-size: 20px; font-weight: 700; }
-        #detail-popup .restaurant { font-size: 14px; opacity: 0.7; margin-top: 2px; }
-        #detail-popup .rating { font-size: 16px; margin: 6px 0; }
+        @keyframes popupIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        #detail-popup .dish-name { font-size: 19px; font-weight: 700; margin-bottom: 2px; }
+        #detail-popup .restaurant { font-size: 14px; opacity: 0.65; }
+        #detail-popup .rating { font-size: 15px; margin: 6px 0 4px; }
         #detail-popup .tag {
             display: inline-block; padding: 2px 10px; border-radius: 12px;
-            font-size: 12px; background: rgba(249,115,22,0.2); color: #fb923c;
-            margin-top: 2px;
+            font-size: 12px; background: rgba(249,115,22,0.18); color: #fb923c;
         }
-        #detail-popup .comment { font-size: 13px; opacity: 0.55; margin-top: 6px; }
+        #detail-popup .comment { font-size: 13px; opacity: 0.5; margin: 4px 0 0; }
         #detail-popup .goto {
-            display: inline-block; margin-top: 10px; padding: 8px 24px;
-            background: #f97316; color: white; border-radius: 24px;
+            display: inline-block; margin-top: 12px; padding: 8px 22px;
+            background: #f97316; color: white; border-radius: 22px;
             text-decoration: none; font-size: 13px; font-weight: 500;
         }
         #detail-popup .goto:hover { background: #ea580c; }
+        #detail-popup .close-btn {
+            position: absolute; top: 6px; right: 12px;
+            background: none; border: none; color: rgba(255,255,255,0.3);
+            font-size: 16px; cursor: pointer;
+        }
+        #detail-popup .close-btn:hover { color: rgba(255,255,255,0.7); }
 
         #popup-backdrop {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 9; display: none;
+            z-index: 19; display: none;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <button id="back-btn" onclick="window.location.href='/'">← 返回列表</button>
+    <button id="back-btn" onclick="window.location.href='/'">← 返回</button>
     <div id="count-badge">🌍 <span id="record-count">0</span> 道美食</div>
     <div id="popup-backdrop"></div>
     <div id="detail-popup"></div>
 
     <script>
-    (async function() {
-        // ---- 初始化地图 ----
+    (function() {
         const map = new maplibregl.Map({
             container: 'map',
             projection: 'globe',
             style: {
                 version: 8,
                 sources: {
-                    'osm': {
+                    'osm-tiles': {
                         type: 'raster',
                         tiles: [
                             'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -91,174 +101,94 @@
                             'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         ],
                         tileSize: 256,
-                        attribution: '© OpenStreetMap',
+                        attribution: '&copy; OpenStreetMap contributors',
                         maxzoom: 19,
                     }
                 },
                 layers: [
-                    { id: 'osm-layer', type: 'raster', source: 'osm' }
+                    { id: 'osm', type: 'raster', source: 'osm-tiles' }
                 ]
             },
             center: [104, 35],
-            zoom: 1.2,
+            zoom: 1.5,
             minZoom: 1,
             maxZoom: 18,
             attributionControl: true,
             renderWorldCopies: true,
         });
 
-        // 星空背景（通过 canvas 覆盖）
-        const skyCanvas = document.createElement('canvas');
-        skyCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;';
-        skyCanvas.width = window.innerWidth;
-        skyCanvas.height = window.innerHeight;
-        const skyCtx = skyCanvas.getContext('2d');
-        skyCtx.fillStyle = '#0a0a1a';
-        skyCtx.fillRect(0, 0, skyCanvas.width, skyCanvas.height);
-        // 星星
-        for (let i = 0; i < 400; i++) {
-            const x = Math.random() * skyCanvas.width;
-            const y = Math.random() * skyCanvas.height;
-            const r = Math.random() * 1.2;
-            skyCtx.beginPath();
-            skyCtx.arc(x, y, r, 0, Math.PI * 2);
-            skyCtx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.5})`;
-            skyCtx.fill();
-        }
-        // 大气光晕（顶部弧形渐变）
-        const glowGrad = skyCtx.createRadialGradient(
-            skyCanvas.width / 2, skyCanvas.height / 2,
-            Math.min(skyCanvas.width, skyCanvas.height) * 0.35,
-            skyCanvas.width / 2, skyCanvas.height / 2,
-            Math.min(skyCanvas.width, skyCanvas.height) * 1.2
-        );
-        glowGrad.addColorStop(0, 'rgba(10,10,26,0)');
-        glowGrad.addColorStop(0.6, 'rgba(10,10,26,0.3)');
-        glowGrad.addColorStop(1, 'rgba(10,10,26,0.95)');
-        skyCtx.fillStyle = glowGrad;
-        skyCtx.fillRect(0, 0, skyCanvas.width, skyCanvas.height);
+        map.on('load', () => {
+            console.log('[Foofie Globe] Map loaded, projection:', map.getProjection()?.type || 'unknown');
+            document.body.style.background = '#000';
 
-        document.body.appendChild(skyCanvas);
+            // 加载标记
+            fetch('/api/records')
+                .then(r => r.json())
+                .then(records => {
+                    document.getElementById('record-count').textContent = records.length;
+                    records.forEach(d => {
+                        const size = 18 + d.rating * 3;
+                        const color = d.rating <= 2 ? '#ff4444'
+                                    : d.rating <= 3 ? '#ffaa44'
+                                    : d.rating <= 4 ? '#44ff88'
+                                    : '#00ffcc';
+                        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                            <circle cx="${size/2}" cy="${size/2}" r="${size/2-1}" fill="${color}" opacity="0.25"/>
+                            <circle cx="${size/2}" cy="${size/2}" r="${size/4}" fill="${color}"/>
+                            <circle cx="${size/2-size/8}" cy="${size/2-size/8}" r="${size/10}" fill="#fff" opacity="0.45"/>
+                        </svg>`;
+                        const el = document.createElement('div');
+                        el.style.cssText = `width:${size}px;height:${size}px;background:url(data:image/svg+xml,${encodeURIComponent(svg)}) center/contain no-repeat;cursor:pointer;`;
+                        el.title = `${d.dish_name} — ${d.restaurant}`;
 
-        // 自适应星空
-        window.addEventListener('resize', () => {
-            skyCanvas.width = window.innerWidth;
-            skyCanvas.height = window.innerHeight;
+                        new maplibregl.Marker({ element: el, anchor: 'center' })
+                            .setLngLat([d.longitude, d.latitude])
+                            .addTo(map);
+
+                        el.addEventListener('click', () => {
+                            map.flyTo({ center: [d.longitude, d.latitude], zoom: 10, duration: 700 });
+                            showPopup(d);
+                        });
+                    });
+                    console.log('[Foofie Globe] Loaded', records.length, 'records');
+                })
+                .catch(err => console.error('[Foofie Globe] Fetch error:', err));
         });
 
-        // 等地图加载完
-        await new Promise(resolve => map.once('load', resolve));
+        map.on('error', e => console.error('[Foofie Globe] Map error:', e));
 
-        // 淡入效果
-        map.setPaintProperty('osm-layer', 'raster-opacity', 0);
-        const fadeStart = performance.now();
-        function fadeIn(now) {
-            const t = Math.min(1, (now - fadeStart) / 800);
-            map.setPaintProperty('osm-layer', 'raster-opacity', t);
-            if (t < 1) requestAnimationFrame(fadeIn);
-        }
-        requestAnimationFrame(fadeIn);
-
-        console.log('[Foofie Globe] MapLibre globe ready');
-
-        // ---- 加载美食数据 ----
-        let popupActive = false;
+        // 弹窗
         const popupEl = document.getElementById('detail-popup');
         const backdropEl = document.getElementById('popup-backdrop');
-        const countEl = document.getElementById('record-count');
 
-        function markerColor(rating) {
-            if (rating <= 2) return '#ff4444';
-            if (rating <= 3) return '#ffaa44';
-            if (rating <= 4) return '#44ff88';
-            return '#00ffcc';
-        }
-
-        function createMarkerSVG(rating) {
-            const color = markerColor(rating);
-            const size = 16 + rating * 3;
-            return `<?xml version="1.0" encoding="UTF-8"?>
-            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-                <defs>
-                    <filter id="glow">
-                        <feGaussianBlur stdDeviation="2" result="blur"/>
-                        <feMerge>
-                            <feMergeNode in="blur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                </defs>
-                <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" opacity="0.3" filter="url(#glow)"/>
-                <circle cx="${size/2}" cy="${size/2}" r="${size/4}" fill="${color}"/>
-                <circle cx="${size/2 - size/10}" cy="${size/2 - size/10}" r="${size/10}" fill="white" opacity="0.5"/>
-            </svg>`;
-        }
-
-        function dataURL(svg) {
-            return 'data:image/svg+xml,' + encodeURIComponent(svg);
-        }
-
-        try {
-            const resp = await fetch('/api/records');
-            const records = await resp.json();
-            countEl.textContent = records.length;
-
-            records.forEach(d => {
-                const el = document.createElement('div');
-                const marker = new maplibregl.Marker({
-                    element: el,
-                    anchor: 'center',
-                });
-                el.style.cssText = `width:${20+d.rating*3}px;height:${20+d.rating*3}px;background:url(${dataURL(createMarkerSVG(d.rating))}) center/contain no-repeat;cursor:pointer;`;
-                el.title = `${d.dish_name} — ${d.restaurant}`;
-
-                marker.setLngLat([d.longitude, d.latitude]).addTo(map);
-
-                el.addEventListener('click', () => {
-                    map.flyTo({ center: [d.longitude, d.latitude], zoom: 10, duration: 800 });
-                    showPopup(d);
-                });
-            });
-
-            console.log('[Foofie Globe] Loaded', records.length, 'records');
-        } catch (err) {
-            console.error('[Foofie Globe] Load error:', err);
-        }
-
-        // ---- 弹窗逻辑 ----
         function showPopup(d) {
-            popupActive = true;
             const stars = '⭐'.repeat(d.rating);
             popupEl.innerHTML = `
+                <button class="close-btn" onclick="event.stopPropagation();document.getElementById('detail-popup').style.display='none';document.getElementById('popup-backdrop').style.display='none';">✕</button>
                 <div class="dish-name">${d.dish_name}</div>
                 <div class="restaurant">🏪 ${d.restaurant}</div>
                 <div class="rating">${stars}</div>
-                <div><span class="tag">${d.cuisine_tag}</span></div>
+                <span class="tag">${d.cuisine_tag}</span>
                 ${d.comment ? `<div class="comment">💬 ${d.comment}</div>` : ''}
-                <a href="/record/${d.id}" class="goto">查看完整信息 →</a>
+                <a href="/record/${d.id}" class="goto">查看详情 →</a>
             `;
             popupEl.style.display = 'block';
             backdropEl.style.display = 'block';
-            popupEl.onclick = function(e) {
-                if (e.target.tagName !== 'A') window.location.href = '/record/' + d.id;
+            popupEl.onclick = e => {
+                if (e.target.tagName !== 'A' && !e.target.classList.contains('close-btn'))
+                    window.location.href = '/record/' + d.id;
             };
         }
 
         function hidePopup() {
             popupEl.style.display = 'none';
             backdropEl.style.display = 'none';
-            popupActive = false;
         }
 
         backdropEl.addEventListener('click', hidePopup);
         document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePopup(); });
 
-        // 点击地图空白关闭弹窗
-        map.on('click', e => {
-            if (popupActive && !e.originalEvent.defaultPrevented) {
-                hidePopup();
-            }
-        });
+        window.addEventListener('resize', () => map.resize());
     })();
     </script>
 </body>
