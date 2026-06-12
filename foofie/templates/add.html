@@ -200,21 +200,74 @@ function getLocation() {
 function openMapPicker() {
     var curLat = parseFloat(document.getElementById('latitude').value) || 39.9;
     var curLng = parseFloat(document.getElementById('longitude').value) || 116.4;
-    // 库里存的是 WGS-84，高德 URI 需要 GCJ-02
+    // 库里是 WGS-84，高德地图需要 GCJ-02
     var gcj = wgs84ToGcj02(curLng, curLat);
-    window.open('https://uri.amap.com/marker?position=' + gcj[0] + ',' + gcj[1] + '&callnative=1', '_blank');
-    // 从高德拿到的 GCJ-02 需要转 WGS-84 再存库
-    setTimeout(function () {
-        var lng = prompt('请输入在「高德地图」上看到的经度（GCJ-02，会自动转 WGS-84）：', curLng);
-        if (lng === null) return;
-        var lat = prompt('请输入在「高德地图」上看到的纬度：', curLat);
-        if (lat === null) return;
-        var l = parseFloat(lng), a = parseFloat(lat);
-        if (isNaN(l) || isNaN(a) || a < -90 || a > 90 || l < -180 || l > 180) { alert('经纬度超出有效范围'); return; }
-        // 高德坐标是 GCJ-02，用小克算法转 WGS-84
-        var wgs = gcj02ToWgs84(l, a);
+
+    // 创建弹窗
+    var overlay = document.createElement('div');
+    overlay.id = 'map-picker-overlay';
+    overlay.innerHTML = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998;"></div>' +
+        '<div style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;display:flex;flex-direction:column;background:#fff;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fff;border-bottom:1px solid #e5e7eb;flex-shrink:0;">' +
+        '<span style="font-weight:600;font-size:15px;color:#1f2937;">点击地图选择位置</span>' +
+        '<div style="display:flex;gap:8px;">' +
+        '<span id="picker-coords" style="font-size:12px;color:#6b7280;line-height:28px;">点击地图选点</span>' +
+        '<button onclick="confirmMapPick()" style="padding:5px 16px;background:#f97316;color:#fff;border:0;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;">确认</button>' +
+        '<button onclick="closeMapPicker()" style="padding:5px 12px;background:#e5e7eb;color:#374151;border:0;border-radius:6px;font-size:14px;cursor:pointer;">×</button>' +
+        '</div></div>' +
+        '<div id="map-picker-container" style="flex:1;"></div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    var mapPicker = { map: null, marker: null, pickedLng: gcj[0], pickedLat: gcj[1] };
+    window._mapPicker = mapPicker;
+
+    function initMap() {
+        mapPicker.map = new AMap.Map('map-picker-container', {
+            center: [gcj[0], gcj[1]],
+            zoom: 16,
+            resizeEnable: true
+        });
+        mapPicker.marker = new AMap.Marker({
+            position: [gcj[0], gcj[1]],
+            map: mapPicker.map,
+            draggable: false
+        });
+        mapPicker.map.on('click', function (e) {
+            var lng = e.lnglat.getLng();
+            var lat = e.lnglat.getLat();
+            mapPicker.marker.setPosition([lng, lat]);
+            mapPicker.pickedLng = lng;
+            mapPicker.pickedLat = lat;
+            document.getElementById('picker-coords').textContent = lng.toFixed(6) + ', ' + lat.toFixed(6);
+        });
+    }
+
+    if (window.AMap) {
+        initMap();
+    } else {
+        var s = document.createElement('script');
+        s.src = 'https://webapi.amap.com/maps?v=2.0&key=da871d468999004045882e999bcef299';
+        s.onload = function () { initMap(); };
+        s.onerror = function () { alert('高德地图加载失败，请检查网络'); closeMapPicker(); };
+        document.head.appendChild(s);
+    }
+}
+
+function confirmMapPick() {
+    var mp = window._mapPicker;
+    if (mp && mp.pickedLng !== undefined) {
+        // 高德地图返回 GCJ-02，转 WGS-84 存库
+        var wgs = gcj02ToWgs84(mp.pickedLng, mp.pickedLat);
         setCoords(wgs[0], wgs[1]);
-    }, 500);
+    }
+    closeMapPicker();
+}
+
+function closeMapPicker() {
+    var el = document.getElementById('map-picker-overlay');
+    if (el) el.remove();
+    window._mapPicker = null;
 }
 
 // GCJ-02 → WGS-84（高德坐标还原，小克本地算法）
