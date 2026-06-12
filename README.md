@@ -13,13 +13,13 @@
 
 ## 界面截图
 
-| 首页 | 添加记录 |
-|------|---------|
-| ![首页](screenshots/01.png) | ![添加](screenshots/02.png) |
+| 菜品视图 | 餐厅视图 |
+|---------|---------|
+| ![菜品](screenshots/01.png) | ![餐厅](screenshots/02.png) |
 
-| 详情 | 3D 地球 |
-|------|--------|
-| ![详情](screenshots/03.png) | ![地球](screenshots/04.png) |
+| 3D 地球 | 点位详情 |
+|--------|---------|
+| ![地球](screenshots/03.png) | ![详情](screenshots/04.png) |
 
 ## 技术栈
 
