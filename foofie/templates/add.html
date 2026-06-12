@@ -160,9 +160,10 @@ function wgs84ToGcj02(lon, lat) {
 function setCoords(lng, lat, name) {
     document.getElementById('latitude').value = lat;
     document.getElementById('longitude').value = lng;
-    // 异步获取行政区域名
+    // 异步获取行政区域名（高德需要 GCJ-02）
     if (!name) {
-        reverseGeocode(lng, lat, function (addr) {
+        var gcj = wgs84ToGcj02(lng, lat);
+        reverseGeocode(gcj[0], gcj[1], function (addr) {
             document.getElementById('location_name').value = addr || (lat.toFixed(6) + ', ' + lng.toFixed(6));
             document.getElementById('location-status').textContent = addr || (lat.toFixed(6) + ', ' + lng.toFixed(6));
         });
