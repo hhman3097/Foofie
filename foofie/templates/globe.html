@@ -3,192 +3,506 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🌍 Foofie 美食地球</title>
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css">
-    <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
+    <title>Foofie 美食地球</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.130/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.130/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            width: 100%; height: 100%;
+        html, body, #cesium-container {
+            width: 100%;
+            height: 100%;
             overflow: hidden;
-            background: #0a0a2e;
-            font-family: -apple-system, system-ui, sans-serif;
-        }
-        #map { width: 100%; height: 100%; position: relative; z-index: 1; }
-
-        .maplibregl-ctrl-attrib {
-            background: rgba(0,0,0,0.4) !important;
-            font-size: 10px !important;
-            padding: 2px 6px !important;
+            background: #030712;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
         }
 
-        #back-btn {
-            position: fixed; top: 16px; left: 16px; z-index: 20;
-            background: rgba(0,0,0,0.55); color: white; border: none;
-            padding: 8px 16px; border-radius: 20px; font-size: 13px;
-            cursor: pointer; backdrop-filter: blur(6px); letter-spacing: 0.3px;
+        .cesium-viewer-bottom,
+        .cesium-credit-logoContainer {
+            display: none !important;
         }
-        #back-btn:hover { background: rgba(0,0,0,0.75); }
 
-        #count-badge {
-            position: fixed; top: 16px; right: 16px; z-index: 20;
-            background: rgba(0,0,0,0.55); color: white;
-            padding: 8px 14px; border-radius: 20px; font-size: 13px;
-            backdrop-filter: blur(6px);
+        .globe-control-shell {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            z-index: 20;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .globe-control-shell button,
+        .layer-panel,
+        .count-badge {
+            pointer-events: auto;
+        }
+
+        .globe-btn {
+            background: rgba(3,7,18,0.72);
+            color: #f8fafc;
+            border: 1px solid rgba(255,255,255,0.14);
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+
+        .globe-btn:hover { background: rgba(3,7,18,0.9); }
+
+        .right-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .count-badge {
+            background: rgba(3,7,18,0.72);
+            color: #f8fafc;
+            border: 1px solid rgba(255,255,255,0.14);
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+        }
+
+        .layer-panel {
+            width: 230px;
+            background: rgba(3,7,18,0.82);
+            color: #f8fafc;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 8px;
+            padding: 12px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 16px 46px rgba(0,0,0,0.35);
+        }
+
+        .layer-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 0.04em;
+            color: #cbd5e1;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 9px;
+            font-size: 13px;
+        }
+
+        .control-row label {
+            color: #e2e8f0;
+            white-space: nowrap;
+        }
+
+        .control-row select {
+            max-width: 130px;
+            color: #f8fafc;
+            background: rgba(15,23,42,0.95);
+            border: 1px solid rgba(148,163,184,0.28);
+            border-radius: 6px;
+            padding: 5px 8px;
+        }
+
+        .control-row input {
+            width: 16px;
+            height: 16px;
         }
 
         #detail-popup {
-            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
-            z-index: 20; background: rgba(12,12,14,0.94); backdrop-filter: blur(16px);
-            color: white; padding: 18px 26px; border-radius: 18px;
-            display: none; max-width: 340px; width: 90%; text-align: center;
-            border: 1px solid rgba(255,255,255,0.07);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-            cursor: pointer;
-            animation: popupIn 0.25s ease-out;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            width: min(360px, calc(100vw - 28px));
+            display: none;
+            color: #f8fafc;
+            background: rgba(3,7,18,0.9);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 8px;
+            padding: 16px 18px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 70px rgba(0,0,0,0.5);
         }
-        @keyframes popupIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(16px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        #detail-popup .dish-name { font-size: 19px; font-weight: 700; margin-bottom: 2px; }
-        #detail-popup .restaurant { font-size: 14px; opacity: 0.65; }
-        #detail-popup .rating { font-size: 15px; margin: 6px 0 4px; }
-        #detail-popup .tag {
-            display: inline-block; padding: 2px 10px; border-radius: 12px;
-            font-size: 12px; background: rgba(249,115,22,0.18); color: #fb923c;
-        }
-        #detail-popup .comment { font-size: 13px; opacity: 0.5; margin: 4px 0 0; }
-        #detail-popup .goto {
-            display: inline-block; margin-top: 12px; padding: 8px 22px;
-            background: #f97316; color: white; border-radius: 22px;
-            text-decoration: none; font-size: 13px; font-weight: 500;
-        }
-        #detail-popup .goto:hover { background: #ea580c; }
-        #detail-popup .close-btn {
-            position: absolute; top: 6px; right: 12px;
-            background: none; border: none; color: rgba(255,255,255,0.3);
-            font-size: 16px; cursor: pointer;
-        }
-        #detail-popup .close-btn:hover { color: rgba(255,255,255,0.7); }
 
-        #popup-backdrop {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 19; display: none;
+        #detail-popup h2 {
+            font-size: 18px;
+            line-height: 1.25;
+            margin: 0 26px 4px 0;
+        }
+
+        #detail-popup p {
+            margin: 4px 0;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        #detail-popup img {
+            width: 96px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        #detail-popup a {
+            display: inline-block;
+            margin-top: 12px;
+            color: white;
+            background: #f97316;
+            text-decoration: none;
+            border-radius: 20px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        #detail-popup a:hover { background: #ea580c; }
+
+        .close-btn {
+            position: absolute;
+            top: 9px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            border: 0;
+            border-radius: 50%;
+            color: #cbd5e1;
+            background: rgba(255,255,255,0.08);
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.15);
+        }
+
+        #status-msg {
+            position: fixed;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            z-index: 30;
+            color: #fecaca;
+            background: rgba(127,29,29,0.78);
+            border: 1px solid rgba(248,113,113,0.35);
+            border-radius: 8px;
+            padding: 9px 14px;
+            font-size: 13px;
+            display: none;
+        }
+
+        @media (max-width: 640px) {
+            .globe-control-shell {
+                top: 12px;
+                left: 12px;
+                right: 12px;
+            }
+
+            .layer-panel {
+                width: 188px;
+                padding: 10px;
+            }
+
+            .control-row {
+                font-size: 12px;
+            }
+
+            .control-row select {
+                max-width: 104px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <button id="back-btn" onclick="window.location.href='/'">← 返回</button>
-    <div id="count-badge">🌍 <span id="record-count">0</span> 道美食</div>
-    <div id="popup-backdrop"></div>
+    <div id="cesium-container"></div>
+
+    <div class="globe-control-shell">
+        <button id="back-btn" class="globe-btn" type="button" onclick="window.location.href='/'">← 返回</button>
+        <div class="right-stack">
+            <div class="count-badge">🌍 <span id="record-count">0</span> 道美食</div>
+            <button id="reset-btn" class="globe-btn" type="button" title="回到初始视角">🏠 重置视角</button>
+            <div class="layer-panel" aria-label="地球图层控制">
+                <div class="layer-title">图层</div>
+                <div class="control-row">
+                    <label for="basemap-select">底图</label>
+                    <select id="basemap-select">
+                        <option value="satellite" selected>卫星图</option>
+                        <option value="osm">街道图</option>
+                        <option value="dark">暗色图</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label for="food-layer-toggle">美食点位</label>
+                    <input id="food-layer-toggle" type="checkbox" checked>
+                </div>
+                <div class="control-row">
+                    <label for="rating-filter">最低评分</label>
+                    <select id="rating-filter">
+                        <option value="1">全部</option>
+                        <option value="3">3 星以上</option>
+                        <option value="4">4 星以上</option>
+                        <option value="5">5 星</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="detail-popup"></div>
+    <div id="status-msg"></div>
 
     <script>
-    (function() {
-        const map = new maplibregl.Map({
-            container: 'map',
-            projection: 'globe',
-            style: {
-                version: 8,
-                sources: {
-                    'osm-tiles': {
-                        type: 'raster',
-                        tiles: [
-                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        ],
-                        tileSize: 256,
-                        attribution: '&copy; OpenStreetMap contributors',
-                        maxzoom: 19,
-                    }
-                },
-                layers: [
-                    { id: 'osm', type: 'raster', source: 'osm-tiles' }
-                ]
-            },
-            center: [104, 35],
-            zoom: 1.5,
-            minZoom: 1,
-            maxZoom: 18,
-            attributionControl: true,
-            renderWorldCopies: true,
-        });
-
-        map.on('load', () => {
-            console.log('[Foofie Globe] Map loaded, projection:', map.getProjection()?.type || 'unknown');
-            document.body.style.background = '#000';
-
-            // 加载标记
-            fetch('/api/records')
-                .then(r => r.json())
-                .then(records => {
-                    document.getElementById('record-count').textContent = records.length;
-                    records.forEach(d => {
-                        const size = 18 + d.rating * 3;
-                        const color = d.rating <= 2 ? '#ff4444'
-                                    : d.rating <= 3 ? '#ffaa44'
-                                    : d.rating <= 4 ? '#44ff88'
-                                    : '#00ffcc';
-                        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-                            <circle cx="${size/2}" cy="${size/2}" r="${size/2-1}" fill="${color}" opacity="0.25"/>
-                            <circle cx="${size/2}" cy="${size/2}" r="${size/4}" fill="${color}"/>
-                            <circle cx="${size/2-size/8}" cy="${size/2-size/8}" r="${size/10}" fill="#fff" opacity="0.45"/>
-                        </svg>`;
-                        const el = document.createElement('div');
-                        el.style.cssText = `width:${size}px;height:${size}px;background:url(data:image/svg+xml,${encodeURIComponent(svg)}) center/contain no-repeat;cursor:pointer;`;
-                        el.title = `${d.dish_name} — ${d.restaurant}`;
-
-                        new maplibregl.Marker({ element: el, anchor: 'center' })
-                            .setLngLat([d.longitude, d.latitude])
-                            .addTo(map);
-
-                        el.addEventListener('click', () => {
-                            map.flyTo({ center: [d.longitude, d.latitude], zoom: 10, duration: 700 });
-                            showPopup(d);
-                        });
-                    });
-                    console.log('[Foofie Globe] Loaded', records.length, 'records');
-                })
-                .catch(err => console.error('[Foofie Globe] Fetch error:', err));
-        });
-
-        map.on('error', e => console.error('[Foofie Globe] Map error:', e));
-
-        // 弹窗
+    (function () {
+        const recordsUrl = '/api/records';
+        const countEl = document.getElementById('record-count');
         const popupEl = document.getElementById('detail-popup');
-        const backdropEl = document.getElementById('popup-backdrop');
+        const statusEl = document.getElementById('status-msg');
+        const foodLayerToggle = document.getElementById('food-layer-toggle');
+        const ratingFilter = document.getElementById('rating-filter');
+        const basemapSelect = document.getElementById('basemap-select');
+        const FLY_TO_HEIGHT = 1200;
+        const DEFAULT_LON = 104;
+        const DEFAULT_LAT = 32;
+        const DEFAULT_ALTITUDE = 14500000;
 
-        function showPopup(d) {
-            const stars = '⭐'.repeat(d.rating);
-            popupEl.innerHTML = `
-                <button class="close-btn" onclick="event.stopPropagation();document.getElementById('detail-popup').style.display='none';document.getElementById('popup-backdrop').style.display='none';">✕</button>
-                <div class="dish-name">${d.dish_name}</div>
-                <div class="restaurant">🏪 ${d.restaurant}</div>
-                <div class="rating">${stars}</div>
-                <span class="tag">${d.cuisine_tag}</span>
-                ${d.comment ? `<div class="comment">💬 ${d.comment}</div>` : ''}
-                <a href="/record/${d.id}" class="goto">查看详情 →</a>
-            `;
+        const viewer = new Cesium.Viewer('cesium-container', {
+            baseLayer: false,
+            animation: false,
+            timeline: false,
+            geocoder: false,
+            homeButton: false,
+            sceneModePicker: false,
+            baseLayerPicker: false,
+            navigationHelpButton: false,
+            fullscreenButton: false,
+            infoBox: false,
+            selectionIndicator: false,
+            requestRenderMode: true,
+            maximumRenderTimeChange: Infinity,
+        });
+
+        viewer.scene.globe.enableLighting = false;
+        viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#1d4f63');
+        viewer.scene.skyAtmosphere.show = true;
+        viewer.scene.screenSpaceCameraController.minimumZoomDistance = 200;
+        viewer.scene.screenSpaceCameraController.maximumZoomDistance = 24000000;
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(DEFAULT_LON, DEFAULT_LAT, DEFAULT_ALTITUDE),
+        });
+
+        function resetCamera() {
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(DEFAULT_LON, DEFAULT_LAT, DEFAULT_ALTITUDE),
+                duration: 1.2,
+                orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
+            });
+            hidePopup();
+        }
+
+        document.getElementById('reset-btn').addEventListener('click', resetCamera);
+
+        const imageryLayers = viewer.imageryLayers;
+        const basemaps = {
+            osm: function () {
+                return new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
+                    url: 'https://a.tile.openstreetmap.org/',
+                    credit: '© OpenStreetMap contributors',
+                }));
+            },
+            satellite: function () {
+                return new Cesium.ImageryLayer(new Cesium.UrlTemplateImageryProvider({
+                    url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                    maximumLevel: 19,
+                    credit: 'Tiles © Esri',
+                }));
+            },
+            dark: function () {
+                return new Cesium.ImageryLayer(new Cesium.UrlTemplateImageryProvider({
+                    url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                    maximumLevel: 19,
+                    credit: '© OpenStreetMap contributors © CARTO',
+                }));
+            },
+        };
+
+        let activeBaseLayer = basemaps.satellite();
+        imageryLayers.add(activeBaseLayer);
+
+        const foodEntities = [];
+        const foodLayer = new Cesium.CustomDataSource('food-records');
+        viewer.dataSources.add(foodLayer);
+
+        function showStatus(message) {
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+        }
+
+        function clearStatus() {
+            statusEl.textContent = '';
+            statusEl.style.display = 'none';
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                }[char];
+            });
+        }
+
+        function markerColor(rating) {
+            if (rating <= 2) return '#ff3b30';
+            if (rating === 3) return '#ffcc00';
+            if (rating === 4) return '#34c759';
+            return '#ff7a00';
+        }
+
+        function markerImage(color) {
+            const svg =
+                '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">' +
+                '<circle cx="24" cy="24" r="22" fill="rgba(0,0,0,0.42)"/>' +
+                '<circle cx="24" cy="24" r="18" fill="#fff"/>' +
+                '<circle cx="24" cy="24" r="12" fill="' + color + '"/>' +
+                '<circle cx="19" cy="18" r="4" fill="#fff" opacity="0.55"/>' +
+                '</svg>';
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        }
+
+        function addFoodEntity(record) {
+            const color = markerColor(record.rating);
+            const entity = foodLayer.entities.add({
+                id: 'food-' + record.id,
+                position: Cesium.Cartesian3.fromDegrees(record.longitude, record.latitude),
+                billboard: {
+                    image: markerImage(color),
+                    width: 22 + record.rating * 3,
+                    height: 22 + record.rating * 3,
+                    heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                    verticalOrigin: Cesium.VerticalOrigin.CENTER,
+                    scaleByDistance: new Cesium.NearFarScalar(100000, 1.25, 12000000, 0.72),
+                    translucencyByDistance: new Cesium.NearFarScalar(100000, 1, 18000000, 0.68),
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                },
+                label: {
+                    text: record.dish_name,
+                    font: '13px sans-serif',
+                    fillColor: Cesium.Color.WHITE,
+                    outlineColor: Cesium.Color.BLACK.withAlpha(0.72),
+                    outlineWidth: 3,
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    pixelOffset: new Cesium.Cartesian2(0, -24),
+                    showBackground: true,
+                    backgroundColor: Cesium.Color.BLACK.withAlpha(0.45),
+                    backgroundPadding: new Cesium.Cartesian2(7, 4),
+                    distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 2400000),
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                },
+                properties: {
+                    record: record,
+                    rating: record.rating,
+                },
+            });
+            foodEntities.push(entity);
+        }
+
+        function applyFoodLayerFilters() {
+            const minRating = Number(ratingFilter.value);
+            const showLayer = foodLayerToggle.checked;
+            foodEntities.forEach(function (entity) {
+                const rating = entity.properties.rating.getValue();
+                entity.show = showLayer && rating >= minRating;
+            });
+            viewer.scene.requestRender();
+        }
+
+        function switchBasemap(name) {
+            if (activeBaseLayer) imageryLayers.remove(activeBaseLayer, true);
+            activeBaseLayer = basemaps[name] ? basemaps[name]() : basemaps.osm();
+            imageryLayers.add(activeBaseLayer, 0);
+            viewer.scene.requestRender();
+        }
+
+        function showPopup(record) {
+            const thumbnail = record.thumbnail_path
+                ? '<img src="' + escapeHtml(record.thumbnail_path) + '" alt="">'
+                : '';
+            popupEl.innerHTML =
+                '<button class="close-btn" type="button" aria-label="关闭">×</button>' +
+                '<h2>' + escapeHtml(record.dish_name) + '</h2>' +
+                '<p>🏪 ' + escapeHtml(record.restaurant) + '</p>' +
+                '<p>⭐ ' + escapeHtml(record.rating) + ' · ' + escapeHtml(record.cuisine_tag) + '</p>' +
+                (record.location_name ? '<p>📍 ' + escapeHtml(record.location_name) + '</p>' : '') +
+                thumbnail +
+                '<br><a href="/record/' + encodeURIComponent(record.id) + '">查看详情 →</a>';
             popupEl.style.display = 'block';
-            backdropEl.style.display = 'block';
-            popupEl.onclick = e => {
-                if (e.target.tagName !== 'A' && !e.target.classList.contains('close-btn'))
-                    window.location.href = '/record/' + d.id;
-            };
+            popupEl.querySelector('.close-btn').addEventListener('click', hidePopup);
         }
 
         function hidePopup() {
             popupEl.style.display = 'none';
-            backdropEl.style.display = 'none';
+            popupEl.innerHTML = '';
+            viewer.selectedEntity = undefined;
         }
 
-        backdropEl.addEventListener('click', hidePopup);
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePopup(); });
+        const clickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        clickHandler.setInputAction(function (movement) {
+            const picked = viewer.scene.pick(movement.position);
+            if (!Cesium.defined(picked) || !picked.id || !picked.id.properties || !picked.id.properties.record) {
+                hidePopup();
+                return;
+            }
+            const record = picked.id.properties.record.getValue();
+            showPopup(record);
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(record.longitude, record.latitude, FLY_TO_HEIGHT),
+                duration: 0.75,
+            });
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-        window.addEventListener('resize', () => map.resize());
+        fetch(recordsUrl)
+            .then(function (response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function (records) {
+                records.forEach(addFoodEntity);
+                countEl.textContent = records.length;
+                applyFoodLayerFilters();
+                clearStatus();
+                viewer.scene.requestRender();
+            })
+            .catch(function (error) {
+                console.error('[Foofie Globe] Failed to load records:', error);
+                showStatus('美食点位加载失败');
+            });
+
+        basemapSelect.addEventListener('change', function () {
+            switchBasemap(basemapSelect.value);
+        });
+        foodLayerToggle.addEventListener('change', applyFoodLayerFilters);
+        ratingFilter.addEventListener('change', applyFoodLayerFilters);
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') hidePopup();
+        });
+        window.addEventListener('resize', function () {
+            viewer.resize();
+            viewer.scene.requestRender();
+        });
     })();
     </script>
 </body>
