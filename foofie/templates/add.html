@@ -130,6 +130,32 @@
 
 {% block head_extra %}
 <script>
+// WGS-84 → GCJ-02（显示层转换用）
+function wgs84ToGcj02(lon, lat) {
+    var PI = Math.PI, a = 6378245, ee = 0.006693421622965943;
+    function tL(x, y) {
+        var r = -100 + 2*x + 3*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+        r += (20*Math.sin(6*x*PI) + 20*Math.sin(2*x*PI))*2/3;
+        r += (20*Math.sin(y*PI) + 40*Math.sin(y/3*PI))*2/3;
+        r += (160*Math.sin(y/12*PI) + 320*Math.sin(y*PI/30))*2/3;
+        return r;
+    }
+    function tN(x, y) {
+        var r = 300 + x + 2*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+        r += (20*Math.sin(6*x*PI) + 20*Math.sin(2*x*PI))*2/3;
+        r += (20*Math.sin(x*PI) + 40*Math.sin(x/3*PI))*2/3;
+        r += (150*Math.sin(x/12*PI) + 300*Math.sin(x/30*PI))*2/3;
+        return r;
+    }
+    var dLat = tL(lon - 105, lat - 35);
+    var dLon = tN(lon - 105, lat - 35);
+    var radLat = lat / 180 * PI, magic = Math.sin(radLat);
+    magic = 1 - ee * magic * magic;
+    var sM = Math.sqrt(magic);
+    dLat = (dLat * 180) / ((a * (1 - ee)) / (magic * sM) * PI);
+    dLon = (dLon * 180) / (a / sM * Math.cos(radLat) * PI);
+    return [lon + dLon, lat + dLat];
+}
 
 function setCoords(lng, lat, name) {
     document.getElementById('latitude').value = lat;
@@ -152,6 +178,11 @@ function getLocation() {
     try {
         navigator.geolocation.getCurrentPosition(function (pos) {
             setCoords(pos.coords.longitude, pos.coords.latitude);
+            // 显示 GPS 精度（米）方便判断偏移来源
+            if (pos.coords.accuracy) {
+                var status = document.getElementById('location-status');
+                status.textContent += ' (精度 ±' + Math.round(pos.coords.accuracy) + 'm)';
+            }
         }, function (err) {
             status.textContent = '定位失败，请点击「重新定位」按钮';
             var msg = '请点击下方「重新定位」按钮手动触发定位';
@@ -160,16 +191,18 @@ function getLocation() {
             var errorEl = document.getElementById('location-error');
             errorEl.textContent = msg;
             errorEl.classList.remove('hidden');
-        }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 });
+        }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
     } catch (e) {
         status.textContent = '请点击「重新定位」按钮获取位置';
     }
 }
 
 function openMapPicker() {
-    var curLat = document.getElementById('latitude').value || 39.9;
-    var curLng = document.getElementById('longitude').value || 116.4;
-    window.open('https://uri.amap.com/marker?position=' + curLng + ',' + curLat + '&callnative=1', '_blank');
+    var curLat = parseFloat(document.getElementById('latitude').value) || 39.9;
+    var curLng = parseFloat(document.getElementById('longitude').value) || 116.4;
+    // 库里存的是 WGS-84，高德 URI 需要 GCJ-02
+    var gcj = wgs84ToGcj02(curLng, curLat);
+    window.open('https://uri.amap.com/marker?position=' + gcj[0] + ',' + gcj[1] + '&callnative=1', '_blank');
     // 从高德拿到的 GCJ-02 需要转 WGS-84 再存库
     setTimeout(function () {
         var lng = prompt('请输入在「高德地图」上看到的经度（GCJ-02，会自动转 WGS-84）：', curLng);
