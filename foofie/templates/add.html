@@ -268,6 +268,10 @@ function openMapPicker() {
         '<button onclick="confirmMapPick()" style="padding:5px 16px;background:#f97316;color:#fff;border:0;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;">确认</button>' +
         '<button onclick="closeMapPicker()" style="padding:5px 12px;background:#e5e7eb;color:#374151;border:0;border-radius:6px;font-size:14px;cursor:pointer;">×</button>' +
         '</div></div>' +
+        '<div style="padding:8px 14px;border-bottom:1px solid #e5e7eb;flex-shrink:0;display:flex;gap:6px;">' +
+        '<input id="picker-search" type="text" placeholder="搜索地名..." style="flex:1;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;outline:none;" onkeydown="if(event.key===\'Enter\')pickerSearch()">' +
+        '<button onclick="pickerSearch()" style="padding:6px 12px;background:#3b82f6;color:#fff;border:0;border-radius:6px;font-size:13px;cursor:pointer;white-space:nowrap;">搜索</button>' +
+        '</div>' +
         '<div id="map-picker-container" style="flex:1;"></div>' +
         '</div>';
     document.body.appendChild(overlay);
@@ -305,6 +309,34 @@ function openMapPicker() {
         s.onerror = function () { alert('高德地图加载失败，请检查网络'); closeMapPicker(); };
         document.head.appendChild(s);
     }
+}
+
+// 地图选点里的搜索功能
+function pickerSearch() {
+    var mp = window._mapPicker;
+    var q = document.getElementById('picker-search').value.trim();
+    if (!q || !mp || !mp.map) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://restapi.amap.com/v3/geocode/geo?key=da871d468999004045882e999bcef299' +
+        '&address=' + encodeURIComponent(q) + '&output=JSON');
+    xhr.onload = function () {
+        try {
+            var d = JSON.parse(xhr.responseText);
+            if (d.status === '1' && d.geocodes && d.geocodes.length > 0) {
+                var loc = d.geocodes[0].location.split(',');
+                var lng = parseFloat(loc[0]), lat = parseFloat(loc[1]);
+                mp.map.setCenter([lng, lat]);
+                mp.map.setZoom(16);
+                mp.marker.setPosition([lng, lat]);
+                mp.pickedLng = lng;
+                mp.pickedLat = lat;
+                document.getElementById('picker-coords').textContent = d.geocodes[0].formatted_address || (lat.toFixed(6) + ', ' + lng.toFixed(6));
+            } else {
+                alert('未找到该地点');
+            }
+        } catch (e) {}
+    };
+    xhr.send();
 }
 
 function confirmMapPick() {
