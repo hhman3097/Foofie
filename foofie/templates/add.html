@@ -160,9 +160,37 @@ function wgs84ToGcj02(lon, lat) {
 function setCoords(lng, lat, name) {
     document.getElementById('latitude').value = lat;
     document.getElementById('longitude').value = lng;
-    var label = name || (lat.toFixed(6) + ', ' + lng.toFixed(6));
-    document.getElementById('location_name').value = label;
-    document.getElementById('location-status').textContent = label;
+    // 异步获取行政区域名
+    if (!name) {
+        reverseGeocode(lng, lat, function (addr) {
+            document.getElementById('location_name').value = addr || (lat.toFixed(6) + ', ' + lng.toFixed(6));
+            document.getElementById('location-status').textContent = addr || (lat.toFixed(6) + ', ' + lng.toFixed(6));
+        });
+        document.getElementById('location-status').textContent = '正在获取地址...';
+    } else {
+        var label = name || (lat.toFixed(6) + ', ' + lng.toFixed(6));
+        document.getElementById('location_name').value = label;
+        document.getElementById('location-status').textContent = label;
+    }
+}
+
+// 高德 REST API：逆地理编码
+function reverseGeocode(lng, lat, cb) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://restapi.amap.com/v3/geocode/regeo?key=da871d468999004045882e999bcef299' +
+        '&location=' + lng + ',' + lat + '&output=JSON');
+    xhr.onload = function () {
+        try {
+            var d = JSON.parse(xhr.responseText);
+            if (d.status === '1' && d.regeocode) {
+                cb(d.regeocode.formatted_address || '');
+                return;
+            }
+        } catch (e) {}
+        cb('');
+    };
+    xhr.onerror = function () { cb(''); };
+    xhr.send();
 }
 
 // 定位：浏览器 GPS
