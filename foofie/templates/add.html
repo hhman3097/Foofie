@@ -205,30 +205,21 @@ function getLocation() {
     }
 
     try {
-        // 先快速低精度，再升级高精度
         navigator.geolocation.getCurrentPosition(function (pos) {
             setCoords(pos.coords.longitude, pos.coords.latitude);
             if (pos.coords.accuracy) {
                 status.textContent += ' (精度 ±' + Math.round(pos.coords.accuracy) + 'm)';
             }
-        }, function () {
-            // 低精度也失败了，尝试高精度
-            navigator.geolocation.getCurrentPosition(function (pos) {
-                setCoords(pos.coords.longitude, pos.coords.latitude);
-                if (pos.coords.accuracy) {
-                    status.textContent += ' (精度 ±' + Math.round(pos.coords.accuracy) + 'm)';
-                }
-            }, function (err) {
-                status.textContent = '定位失败，请点击「重新定位」按钮';
-                var msg = '请点击下方「重新定位」按钮手动触发定位';
-                if (err.code === 1) msg = '定位权限被拒绝，请在浏览器设置中允许定位，然后点击「重新定位」';
-                if (err.code === 2 || err.code === 3) msg = '定位超时，请点击「重新定位」重试';
-                var errorEl = document.getElementById('location-error');
-                errorEl.textContent = msg;
-                errorEl.classList.remove('hidden');
-                ipFallback();
-            }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
-        }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 });
+        }, function (err) {
+            status.textContent = '定位失败，请点击「重新定位」按钮';
+            var msg = '请点击下方「重新定位」按钮手动触发定位';
+            if (err.code === 1) msg = '定位权限被拒绝，请在浏览器设置中允许定位，然后点击「重新定位」';
+            if (err.code === 2 || err.code === 3) msg = '定位超时，请点击「重新定位」重试';
+            var errorEl = document.getElementById('location-error');
+            errorEl.textContent = msg;
+            errorEl.classList.remove('hidden');
+            ipFallback();
+        }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
     } catch (e) {
         status.textContent = '请点击「重新定位」按钮获取位置';
         ipFallback();
