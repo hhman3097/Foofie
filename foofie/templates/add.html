@@ -130,79 +130,108 @@
 
 {% block head_extra %}
 <script>
-// 页面加载时自动获取定位
-document.addEventListener('DOMContentLoaded', function() {
-    const lat = document.getElementById('latitude').value;
-    if (!lat) {
-        getLocation();
-    }
-});
 
+function setCoords(lng, lat, name) {
+    document.getElementById('latitude').value = lat;
+    document.getElementById('longitude').value = lng;
+    var label = name || (lat.toFixed(6) + ', ' + lng.toFixed(6));
+    document.getElementById('location_name').value = label;
+    document.getElementById('location-status').textContent = label;
+}
+
+// 定位：浏览器 GPS
 function getLocation() {
-    const status = document.getElementById('location-status');
-    const error = document.getElementById('location-error');
-    error.classList.add('hidden');
+    var status = document.getElementById('location-status');
+    status.textContent = '正在获取定位...';
 
     if (!navigator.geolocation) {
-        status.textContent = '浏览器不支持定位功能';
-        showMapFallback();
+        status.textContent = '定位不可用，请使用地图选点';
         return;
     }
 
-    status.textContent = '正在获取定位...';
-
-    navigator.geolocation.getCurrentPosition(
-        function(pos) {
-            document.getElementById('latitude').value = pos.coords.latitude;
-            document.getElementById('longitude').value = pos.coords.longitude;
-            const lat = pos.coords.latitude.toFixed(4);
-            const lng = pos.coords.longitude.toFixed(4);
-            document.getElementById('location_name').value = `${lat}, ${lng}`;
-            status.textContent = `${lat}, ${lng}`;
-        },
-        function(err) {
-            console.warn('Geolocation error:', err);
-            status.textContent = '定位失败';
-            showMapFallback();
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
-}
-
-function showMapFallback() {
-    const error = document.getElementById('location-error');
-    error.textContent = '定位失败，请点击「地图选点」手动选择位置';
-    error.classList.remove('hidden');
+    try {
+        navigator.geolocation.getCurrentPosition(function (pos) {
+            setCoords(pos.coords.longitude, pos.coords.latitude);
+        }, function (err) {
+            status.textContent = '定位失败，请点击「重新定位」按钮';
+            var msg = '请点击下方「重新定位」按钮手动触发定位';
+            if (err.code === 1) msg = '定位权限被拒绝，请在浏览器设置中允许定位，然后点击「重新定位」';
+            if (err.code === 2 || err.code === 3) msg = '定位超时，请点击「重新定位」重试';
+            var errorEl = document.getElementById('location-error');
+            errorEl.textContent = msg;
+            errorEl.classList.remove('hidden');
+        }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 });
+    } catch (e) {
+        status.textContent = '请点击「重新定位」按钮获取位置';
+    }
 }
 
 function openMapPicker() {
-    // MVP 使用一个简单的经纬度输入作为兜底
-    const lat = prompt('请输入纬度（-90 到 90）：', document.getElementById('latitude').value || '');
-    if (lat === null) return;
-    const lng = prompt('请输入经度（-180 到 180）：', document.getElementById('longitude').value || '');
-    if (lng === null) return;
+    var curLat = document.getElementById('latitude').value || 39.9;
+    var curLng = document.getElementById('longitude').value || 116.4;
+    window.open('https://uri.amap.com/marker?position=' + curLng + ',' + curLat + '&callnative=1', '_blank');
+    // 从高德拿到的 GCJ-02 需要转 WGS-84 再存库
+    setTimeout(function () {
+        var lng = prompt('请输入在「高德地图」上看到的经度（GCJ-02，会自动转 WGS-84）：', curLng);
+        if (lng === null) return;
+        var lat = prompt('请输入在「高德地图」上看到的纬度：', curLat);
+        if (lat === null) return;
+        var l = parseFloat(lng), a = parseFloat(lat);
+        if (isNaN(l) || isNaN(a) || a < -90 || a > 90 || l < -180 || l > 180) { alert('经纬度超出有效范围'); return; }
+        // 高德坐标是 GCJ-02，用小克算法转 WGS-84
+        var wgs = gcj02ToWgs84(l, a);
+        setCoords(wgs[0], wgs[1]);
+    }, 500);
+}
 
-    const latNum = parseFloat(lat);
-    const lngNum = parseFloat(lng);
-    if (isNaN(latNum) || isNaN(lngNum) || latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
-        alert('经纬度超出有效范围，请重新输入');
-        return;
+// GCJ-02 → WGS-84（高德坐标还原，小克本地算法）
+function gcj02ToWgs84(lon, lat) {
+    if (lon < 72.004 || lon > 137.8347 || lat < 0.8293 || lat > 55.8271) return [lon, lat];
+    // 先用正向算一遍，再迭代还原
+    var PI = Math.PI, a = 6378245, ee = 0.006693421622965943;
+    function tL(x, y) {
+        var r = -100 + 2*x + 3*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+        r += (20*Math.sin(6*x*PI) + 20*Math.sin(2*x*PI))*2/3;
+        r += (20*Math.sin(y*PI) + 40*Math.sin(y/3*PI))*2/3;
+        r += (160*Math.sin(y/12*PI) + 320*Math.sin(y*PI/30))*2/3;
+        return r;
     }
-
-    document.getElementById('latitude').value = latNum;
-    document.getElementById('longitude').value = lngNum;
-    document.getElementById('location_name').value = `${latNum.toFixed(4)}, ${lngNum.toFixed(4)}`;
-    document.getElementById('location-status').textContent = `${latNum.toFixed(4)}, ${lngNum.toFixed(4)}`;
+    function tN(x, y) {
+        var r = 300 + x + 2*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+        r += (20*Math.sin(6*x*PI) + 20*Math.sin(2*x*PI))*2/3;
+        r += (20*Math.sin(x*PI) + 40*Math.sin(x/3*PI))*2/3;
+        r += (150*Math.sin(x/12*PI) + 300*Math.sin(x/30*PI))*2/3;
+        return r;
+    }
+    var wLon = lon, wLat = lat;
+    for (var i = 0; i < 3; i++) {
+        var dLat = tL(wLon - 105, wLat - 35);
+        var dLon = tN(wLon - 105, wLat - 35);
+        var radLat = wLat / 180 * PI, magic = Math.sin(radLat);
+        magic = 1 - ee * magic * magic;
+        var sM = Math.sqrt(magic);
+        dLat = (dLat * 180) / ((a * (1 - ee)) / (magic * sM) * PI);
+        dLon = (dLon * 180) / (a / sM * Math.cos(radLat) * PI);
+        var gLon = wLon + dLon, gLat = wLat + dLat;
+        wLon -= gLon - lon;
+        wLat -= gLat - lat;
+    }
+    return [wLon, wLat];
 }
 
 function validateForm() {
-    const lat = document.getElementById('latitude').value;
-    const lng = document.getElementById('longitude').value;
-    if (!lat || !lng) {
-        alert('请先获取定位或选择地图位置');
+    if (!document.getElementById('latitude').value || !document.getElementById('longitude').value) {
+        alert('请先获取定位或使用地图选点');
         return false;
     }
     return true;
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (!document.getElementById('latitude').value) {
+        // iOS 需要用户手势才能定位，尝试自动获取，失败后提示点按钮
+        getLocation();
+    }
+});
 </script>
 {% endblock %}

@@ -41,18 +41,23 @@
         }
 
         .globe-btn {
-            background: rgba(3,7,18,0.72);
+            background: rgba(15, 23, 42, 0.85);
             color: #f8fafc;
-            border: 1px solid rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.2);
             padding: 9px 14px;
             border-radius: 8px;
             font-size: 13px;
             cursor: pointer;
-            backdrop-filter: blur(10px);
             white-space: nowrap;
         }
+        @supports (backdrop-filter: blur(1px)) {
+            .globe-btn {
+                background: rgba(15, 23, 42, 0.65);
+                backdrop-filter: blur(10px);
+            }
+        }
 
-        .globe-btn:hover { background: rgba(3,7,18,0.9); }
+        .globe-btn:hover { background: rgba(15, 23, 42, 0.95); }
 
         .right-stack {
             display: flex;
@@ -62,24 +67,34 @@
         }
 
         .count-badge {
-            background: rgba(3,7,18,0.72);
+            background: rgba(15, 23, 42, 0.85);
             color: #f8fafc;
-            border: 1px solid rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.2);
             padding: 9px 14px;
             border-radius: 8px;
             font-size: 13px;
-            backdrop-filter: blur(10px);
+        }
+        @supports (backdrop-filter: blur(1px)) {
+            .count-badge {
+                background: rgba(15, 23, 42, 0.65);
+                backdrop-filter: blur(10px);
+            }
         }
 
         .layer-panel {
             width: 230px;
-            background: rgba(3,7,18,0.82);
+            background: rgba(15, 23, 42, 0.9);
             color: #f8fafc;
-            border: 1px solid rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             padding: 12px;
-            backdrop-filter: blur(12px);
             box-shadow: 0 16px 46px rgba(0,0,0,0.35);
+        }
+        @supports (backdrop-filter: blur(1px)) {
+            .layer-panel {
+                background: rgba(15, 23, 42, 0.7);
+                backdrop-filter: blur(12px);
+            }
         }
 
         .layer-title {
@@ -127,12 +142,17 @@
             width: min(360px, calc(100vw - 28px));
             display: none;
             color: #f8fafc;
-            background: rgba(3,7,18,0.9);
-            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             padding: 16px 18px;
-            backdrop-filter: blur(16px);
             box-shadow: 0 20px 70px rgba(0,0,0,0.5);
+        }
+        @supports (backdrop-filter: blur(1px)) {
+            #detail-popup {
+                background: rgba(15, 23, 42, 0.75);
+                backdrop-filter: blur(16px);
+            }
         }
 
         #detail-popup h2 {
@@ -239,7 +259,6 @@
                     <select id="basemap-select">
                         <option value="satellite" selected>卫星图</option>
                         <option value="osm">街道图</option>
-                        <option value="dark">暗色图</option>
                     </select>
                 </div>
                 <div class="control-row">
@@ -264,6 +283,12 @@
 
     <script>
     (function () {
+        // WebGL 检测
+        if (!(function(){try{var c=document.createElement('canvas');return!!(window.WebGLRenderingContext&&(c.getContext('webgl')||c.getContext('experimental-webgl')))}catch(e){return!1}})()) {
+            document.getElementById('cesium-container').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#f8fafc;font-size:18px;flex-direction:column;gap:16px;"><p>⚠️ 您的浏览器不支持 WebGL</p><p style="font-size:14px;color:#94a3b8;">请使用 Chrome/Edge/Firefox 等现代浏览器打开</p></div>';
+            return;
+        }
+
         const recordsUrl = '/api/records';
         const countEl = document.getElementById('record-count');
         const popupEl = document.getElementById('detail-popup');
@@ -275,6 +300,33 @@
         const DEFAULT_LON = 104;
         const DEFAULT_LAT = 32;
         const DEFAULT_ALTITUDE = 14500000;
+
+        // WGS-84 → GCJ-02（显示层转换，库仍存 WGS-84）
+        function wgs84ToGcj02(lon, lat) {
+            var PI = Math.PI, a = 6378245, ee = 0.006693421622965943;
+            function tL(x, y) {
+                var r = -100 + 2*x + 3*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+                r += (20*Math.sin(6*x*PI) + 20*Math.sin(2*x*PI))*2/3;
+                r += (20*Math.sin(y*PI) + 40*Math.sin(y/3*PI))*2/3;
+                r += (160*Math.sin(y/12*PI) + 320*Math.sin(y*PI/30))*2/3;
+                return r;
+            }
+            function tN(x, y) {
+                var r = 300 + x + 2*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+                r += (20*Math.sin(6*x*PI) + 20*Math.sin(2*x*PI))*2/3;
+                r += (20*Math.sin(x*PI) + 40*Math.sin(x/3*PI))*2/3;
+                r += (150*Math.sin(x/12*PI) + 300*Math.sin(x/30*PI))*2/3;
+                return r;
+            }
+            var dLat = tL(lon - 105, lat - 35);
+            var dLon = tN(lon - 105, lat - 35);
+            var radLat = lat / 180 * PI, magic = Math.sin(radLat);
+            magic = 1 - ee * magic * magic;
+            var sM = Math.sqrt(magic);
+            dLat = (dLat * 180) / ((a * (1 - ee)) / (magic * sM) * PI);
+            dLon = (dLon * 180) / (a / sM * Math.cos(radLat) * PI);
+            return [lon + dLon, lat + dLat];
+        }
 
         const viewer = new Cesium.Viewer('cesium-container', {
             baseLayer: false,
@@ -315,23 +367,30 @@
         const imageryLayers = viewer.imageryLayers;
         const basemaps = {
             osm: function () {
-                return new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({
-                    url: 'https://a.tile.openstreetmap.org/',
-                    credit: '© OpenStreetMap contributors',
+                return new Cesium.ImageryLayer(new Cesium.UrlTemplateImageryProvider({
+                    url: 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}',
+                    subdomains: ['1', '2', '3', '4'],
+                    maximumLevel: 18,
+                    minimumLevel: 0,
+                    credit: '© 高德地图',
                 }));
             },
             satellite: function () {
                 return new Cesium.ImageryLayer(new Cesium.UrlTemplateImageryProvider({
-                    url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                    maximumLevel: 19,
-                    credit: 'Tiles © Esri',
+                    url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+                    subdomains: ['1', '2', '3', '4'],
+                    maximumLevel: 18,
+                    minimumLevel: 0,
+                    credit: '© 高德地图',
                 }));
             },
             dark: function () {
                 return new Cesium.ImageryLayer(new Cesium.UrlTemplateImageryProvider({
-                    url: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-                    maximumLevel: 19,
-                    credit: '© OpenStreetMap contributors © CARTO',
+                    url: 'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=8&x={x}&y={y}&z={z}',
+                    subdomains: ['1', '2', '3', '4'],
+                    maximumLevel: 18,
+                    minimumLevel: 0,
+                    credit: '© 高德地图',
                 }));
             },
         };
@@ -339,7 +398,6 @@
         let activeBaseLayer = basemaps.satellite();
         imageryLayers.add(activeBaseLayer);
 
-        const foodEntities = [];
         const foodLayer = new Cesium.CustomDataSource('food-records');
         viewer.dataSources.add(foodLayer);
 
@@ -384,10 +442,11 @@
         }
 
         function addFoodEntity(record) {
-            const color = markerColor(record.rating);
-            const entity = foodLayer.entities.add({
+            var gcj = wgs84ToGcj02(record.longitude, record.latitude);
+            var color = markerColor(record.rating);
+            var entity = foodLayer.entities.add({
                 id: 'food-' + record.id,
-                position: Cesium.Cartesian3.fromDegrees(record.longitude, record.latitude),
+                position: Cesium.Cartesian3.fromDegrees(gcj[0], gcj[1]),
                 billboard: {
                     image: markerImage(color),
                     width: 22 + record.rating * 3,
@@ -417,16 +476,18 @@
                     rating: record.rating,
                 },
             });
-            foodEntities.push(entity);
         }
 
         function applyFoodLayerFilters() {
-            const minRating = Number(ratingFilter.value);
-            const showLayer = foodLayerToggle.checked;
-            foodEntities.forEach(function (entity) {
-                const rating = entity.properties.rating.getValue();
-                entity.show = showLayer && rating >= minRating;
-            });
+            var minRating = Number(ratingFilter.value);
+            var showLayer = foodLayerToggle.checked;
+            var entities = foodLayer.entities.values;
+            for (var i = 0; i < entities.length; i++) {
+                var entity = entities[i];
+                if (entity.properties && entity.properties.rating) {
+                    entity.show = showLayer && entity.properties.rating.getValue() >= minRating;
+                }
+            }
             viewer.scene.requestRender();
         }
 
@@ -468,8 +529,9 @@
             }
             const record = picked.id.properties.record.getValue();
             showPopup(record);
+            var gcj = wgs84ToGcj02(record.longitude, record.latitude);
             viewer.camera.flyTo({
-                destination: Cesium.Cartesian3.fromDegrees(record.longitude, record.latitude, FLY_TO_HEIGHT),
+                destination: Cesium.Cartesian3.fromDegrees(gcj[0], gcj[1], FLY_TO_HEIGHT),
                 duration: 0.75,
             });
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
