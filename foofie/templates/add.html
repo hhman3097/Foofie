@@ -200,15 +200,14 @@ function getLocation() {
 
     if (!navigator.geolocation) {
         status.textContent = '定位不可用，请使用地图选点';
+        ipFallback();
         return;
     }
 
     try {
         navigator.geolocation.getCurrentPosition(function (pos) {
             setCoords(pos.coords.longitude, pos.coords.latitude);
-            // 显示 GPS 精度（米）方便判断偏移来源
             if (pos.coords.accuracy) {
-                var status = document.getElementById('location-status');
                 status.textContent += ' (精度 ±' + Math.round(pos.coords.accuracy) + 'm)';
             }
         }, function (err) {
@@ -219,10 +218,33 @@ function getLocation() {
             var errorEl = document.getElementById('location-error');
             errorEl.textContent = msg;
             errorEl.classList.remove('hidden');
+            ipFallback();
         }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
     } catch (e) {
         status.textContent = '请点击「重新定位」按钮获取位置';
+        ipFallback();
     }
+}
+
+// IP 定位兜底：拿一个城市级位置，免得一直默认北京
+function ipFallback() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://restapi.amap.com/v3/ip?key=da871d468999004045882e999bcef299&output=JSON');
+    xhr.onload = function () {
+        try {
+            var d = JSON.parse(xhr.responseText);
+            if (d.status === '1' && d.rectangle) {
+                // rectangle 格式: "minLng,minLat;maxLng,maxLat"
+                var parts = d.rectangle.split(';')[0].split(',');
+                var lng = parseFloat(parts[0]), lat = parseFloat(parts[1]);
+                if (!isNaN(lng) && !isNaN(lat)) {
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lng;
+                }
+            }
+        } catch (e) {}
+    };
+    xhr.send();
 }
 
 function openMapPicker() {
