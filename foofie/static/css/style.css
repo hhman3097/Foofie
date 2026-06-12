@@ -209,7 +209,8 @@
 }
 
 .record-card {
-    display: block;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     border-radius: 0.75rem;
     border: 1px solid rgba(214, 211, 209, 0.72);
