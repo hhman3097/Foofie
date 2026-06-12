@@ -240,18 +240,14 @@
 
 .rating-dots {
     display: inline-flex;
-    gap: 0.22rem;
+    gap: 2px;
+    font-size: 0.9rem;
+    color: #d6d3d1;
+    letter-spacing: 1px;
 }
 
-.rating-dots span {
-    width: 0.42rem;
-    height: 0.42rem;
-    border-radius: 999px;
-    background: #d6d3d1;
-}
-
-.rating-dots span.on {
-    background: #f97316;
+.rating-dots .star-on {
+    color: #f97316;
 }
 
 .empty-state {

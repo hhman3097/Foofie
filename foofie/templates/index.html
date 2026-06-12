@@ -77,12 +77,17 @@
                 <div class="flex items-center justify-between gap-3">
                     <span class="chip inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">{{ r.cuisine_tag }}</span>
                     <span class="rating-dots" aria-label="{{ r.rating }} 星">
-                        {% for i in range(5) %}<span class="{% if i < r.rating %}on{% endif %}"></span>{% endfor %}
+                        {% for i in range(5) %}{% if i < r.rating %}★{% else %}☆{% endif %}{% endfor %}
                     </span>
                 </div>
-                <div class="flex items-center justify-between gap-2 text-xs text-stone-400">
-                    <span class="min-w-0 truncate">{% if r.location_name %}{{ r.location_name }}{% else %}未命名地点{% endif %}</span>
-                    <span>{{ r.date_eaten }}</span>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <a href="/globe?lat={{ r.latitude }}&lng={{ r.longitude }}&name={{ r.dish_name|urlencode }}"
+                           class="flex-shrink-0 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100 transition-colors"
+                           title="在地球上查看">🌍</a>
+                        <span class="text-xs text-stone-400 truncate">{% if r.location_name %}{{ r.location_name }}{% else %}未命名地点{% endif %}</span>
+                    </div>
+                    <span class="text-xs text-stone-400 flex-shrink-0">{{ r.date_eaten }}</span>
                 </div>
             </div>
         </a>

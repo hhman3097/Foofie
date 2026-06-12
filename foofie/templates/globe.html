@@ -371,6 +371,20 @@
             destination: Cesium.Cartesian3.fromDegrees(DEFAULT_LON, DEFAULT_LAT, DEFAULT_ALTITUDE),
         });
 
+        // 带参数跳转：/globe?lat=X&lng=Y&name=Z
+        var params = new URLSearchParams(window.location.search);
+        var flyLat = parseFloat(params.get('lat'));
+        var flyLng = parseFloat(params.get('lng'));
+        if (!isNaN(flyLat) && !isNaN(flyLng)) {
+            setTimeout(function () {
+                var gcj = wgs84ToGcj02(flyLng, flyLat);
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(gcj[0], gcj[1], 8000),
+                    duration: 2,
+                });
+            }, 1500);
+        }
+
         function resetCamera() {
             viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(DEFAULT_LON, DEFAULT_LAT, DEFAULT_ALTITUDE),
