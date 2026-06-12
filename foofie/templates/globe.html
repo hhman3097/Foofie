@@ -21,149 +21,157 @@
             display: none !important;
         }
 
+        /* ====== 地图控件容器 ====== */
         .globe-control-shell {
             position: fixed;
-            top: 16px;
-            left: 16px;
-            right: 16px;
+            top: 12px;
+            left: 12px;
+            right: 12px;
             z-index: 20;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
             pointer-events: none;
         }
 
         .globe-control-shell button,
-        .layer-panel,
+        .map-control-card,
         .count-badge {
             pointer-events: auto;
         }
 
-        .globe-btn {
-            background: rgba(15, 23, 42, 0.85);
-            color: #f8fafc;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 9px 14px;
+        /* ====== 通用浅色卡片 ====== */
+        .map-control-card,
+        .globe-btn,
+        .count-badge {
+            background: rgba(255,255,255,0.88);
+            color: #1f2937;
+            border: 1px solid rgba(31,41,55,0.10);
             border-radius: 8px;
             font-size: 13px;
-            cursor: pointer;
-            white-space: nowrap;
+            box-shadow: 0 4px 14px rgba(15,23,42,0.10);
         }
         @supports (backdrop-filter: blur(1px)) {
-            .globe-btn {
-                background: rgba(15, 23, 42, 0.65);
-                backdrop-filter: blur(10px);
+            .map-control-card,
+            .globe-btn,
+            .count-badge {
+                background: rgba(255,255,255,0.78);
+                backdrop-filter: blur(14px);
             }
         }
 
-        .globe-btn:hover { background: rgba(15, 23, 42, 0.95); }
+        /* ====== 按钮 ====== */
+        .globe-btn {
+            padding: 8px 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-weight: 500;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .globe-btn:hover {
+            background: rgba(255,255,255,0.94);
+            box-shadow: 0 6px 20px rgba(15,23,42,0.14);
+        }
 
         .right-stack {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 10px;
+            gap: 8px;
         }
 
         .count-badge {
-            background: rgba(15, 23, 42, 0.85);
-            color: #f8fafc;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 9px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-        }
-        @supports (backdrop-filter: blur(1px)) {
-            .count-badge {
-                background: rgba(15, 23, 42, 0.65);
-                backdrop-filter: blur(10px);
-            }
+            padding: 8px 14px;
+            font-weight: 500;
+            color: #374151;
         }
 
+        /* ====== 图层面板 ====== */
         .layer-panel {
-            width: 230px;
-            background: rgba(15, 23, 42, 0.9);
-            color: #f8fafc;
-            border: 1px solid rgba(255,255,255,0.2);
+            width: 220px;
+            padding: 11px 13px;
+            color: #1f2937;
             border-radius: 8px;
-            padding: 12px;
-            box-shadow: 0 16px 46px rgba(0,0,0,0.35);
-        }
-        @supports (backdrop-filter: blur(1px)) {
-            .layer-panel {
-                background: rgba(15, 23, 42, 0.7);
-                backdrop-filter: blur(12px);
-            }
+            box-shadow: 0 10px 30px rgba(15,23,42,0.12);
         }
 
         .layer-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            margin-bottom: 10px;
-            letter-spacing: 0.04em;
-            color: #cbd5e1;
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            text-transform: uppercase;
         }
 
         .control-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-            margin-top: 9px;
+            gap: 8px;
+            margin-top: 8px;
             font-size: 13px;
         }
 
         .control-row label {
-            color: #e2e8f0;
+            color: #374151;
             white-space: nowrap;
+            font-weight: 500;
         }
 
         .control-row select {
-            max-width: 130px;
-            color: #f8fafc;
-            background: rgba(15,23,42,0.95);
-            border: 1px solid rgba(148,163,184,0.28);
+            max-width: 120px;
+            color: #1f2937;
+            background: rgba(255,255,255,0.8);
+            border: 1px solid rgba(31,41,55,0.14);
             border-radius: 6px;
-            padding: 5px 8px;
+            padding: 4px 7px;
+            font-size: 12px;
+            outline: none;
         }
 
-        .control-row input {
+        .control-row input[type="checkbox"] {
             width: 16px;
             height: 16px;
+            accent-color: #f97316;
         }
 
+        /* ====== 点位详情弹窗 ====== */
+        .map-popup-card,
         #detail-popup {
             position: fixed;
-            bottom: 30px;
+            bottom: 28px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 25;
-            width: min(360px, calc(100vw - 28px));
+            width: min(340px, calc(100vw - 24px));
             display: none;
-            color: #f8fafc;
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
+            color: #1f2937;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(31,41,55,0.10);
+            border-radius: 10px;
             padding: 16px 18px;
-            box-shadow: 0 20px 70px rgba(0,0,0,0.5);
+            box-shadow: 0 12px 36px rgba(15,23,42,0.14);
         }
         @supports (backdrop-filter: blur(1px)) {
             #detail-popup {
-                background: rgba(15, 23, 42, 0.75);
+                background: rgba(255,255,255,0.80);
                 backdrop-filter: blur(16px);
             }
         }
 
         #detail-popup h2 {
-            font-size: 18px;
-            line-height: 1.25;
-            margin: 0 26px 4px 0;
+            font-size: 17px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin: 0 26px 6px 0;
+            color: #111827;
         }
 
         #detail-popup p {
-            margin: 4px 0;
-            color: #cbd5e1;
+            margin: 3px 0;
+            color: #4b5563;
             font-size: 13px;
         }
 
@@ -178,33 +186,37 @@
         #detail-popup a {
             display: inline-block;
             margin-top: 12px;
-            color: white;
+            color: #fff;
             background: #f97316;
             text-decoration: none;
             border-radius: 20px;
-            padding: 8px 18px;
+            padding: 7px 16px;
             font-size: 13px;
             font-weight: 600;
+            transition: background 0.15s;
         }
 
         #detail-popup a:hover { background: #ea580c; }
 
         .close-btn {
             position: absolute;
-            top: 9px;
+            top: 8px;
             right: 10px;
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             border: 0;
             border-radius: 50%;
-            color: #cbd5e1;
-            background: rgba(255,255,255,0.08);
+            color: #6b7280;
+            background: rgba(0,0,0,0.06);
             cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            transition: background 0.15s;
         }
 
         .close-btn:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.15);
+            color: #1f2937;
+            background: rgba(0,0,0,0.10);
         }
 
         #status-msg {
@@ -213,20 +225,20 @@
             bottom: 18px;
             transform: translateX(-50%);
             z-index: 30;
-            color: #fecaca;
-            background: rgba(127,29,29,0.78);
-            border: 1px solid rgba(248,113,113,0.35);
+            color: #b91c1c;
+            background: rgba(254,226,226,0.92);
+            border: 1px solid rgba(185,28,28,0.18);
             border-radius: 8px;
-            padding: 9px 14px;
+            padding: 8px 14px;
             font-size: 13px;
             display: none;
         }
 
         @media (max-width: 640px) {
             .globe-control-shell {
-                top: 12px;
-                left: 12px;
-                right: 12px;
+                top: 8px;
+                left: 8px;
+                right: 8px;
             }
 
             .layer-panel {
@@ -239,7 +251,13 @@
             }
 
             .control-row select {
-                max-width: 104px;
+                max-width: 100px;
+            }
+
+            .globe-btn,
+            .count-badge {
+                padding: 7px 11px;
+                font-size: 12px;
             }
         }
     </style>
@@ -250,9 +268,9 @@
     <div class="globe-control-shell">
         <button id="back-btn" class="globe-btn" type="button" onclick="window.location.href='/'">← 返回</button>
         <div class="right-stack">
-            <div class="count-badge">🌍 <span id="record-count">0</span> 道美食</div>
-            <button id="reset-btn" class="globe-btn" type="button" title="回到初始视角">🏠 重置视角</button>
-            <div class="layer-panel" aria-label="地球图层控制">
+            <div class="count-badge map-control-card"><span id="record-count">0</span> 道美食</div>
+            <button id="reset-btn" class="globe-btn map-control-card" type="button" title="回到初始视角">重置视角</button>
+            <div class="layer-panel map-control-card" aria-label="地球图层控制">
                 <div class="layer-title">图层</div>
                 <div class="control-row">
                     <label for="basemap-select">底图</label>
@@ -278,7 +296,7 @@
         </div>
     </div>
 
-    <div id="detail-popup"></div>
+    <div id="detail-popup" class="map-popup-card"></div>
     <div id="status-msg"></div>
 
     <script>
