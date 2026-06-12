@@ -3,46 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Foofie 🍜{% endblock %}</title>
+    <title>{% block title %}Foofie{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css?v=20260612-ui3">
     {% block head_extra %}{% endblock %}
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- 顶部导航 -->
-    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <a href="/" class="text-xl font-bold text-orange-500 hover:text-orange-600">
-                Foofie 🍜
+<body class="app-shell min-h-screen text-stone-950">
+    <nav class="sticky top-0 z-40 border-b border-stone-200/80 bg-white/86 backdrop-blur-xl">
+        <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+            <a href="/" class="flex items-center gap-3 text-stone-950">
+                <span class="brand-mark inline-flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500 font-extrabold text-white shadow-lg">F</span>
+                <span class="leading-tight">
+                    <span class="block text-lg font-semibold tracking-tight">Foofie</span>
+                    <span class="hidden text-xs text-stone-500 sm:block">Personal food atlas</span>
+                </span>
             </a>
             <div class="flex items-center gap-2">
                 {% if request.url.path == "/" %}
-                <a href="/globe" class="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition">
-                    🌍 地球
+                <a href="/globe" class="btn-secondary inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white/80 px-4 py-2 text-sm font-semibold text-stone-700">
+                    <i data-lucide="globe-2" class="icon-sm"></i>
+                    <span>地球</span>
                 </a>
                 {% endif %}
                 {% if request.url.path != "/" and request.url.path != "/add" %}
-                <a href="/" class="px-3 py-1.5 text-sm bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition">
-                    ← 返回
+                <a href="/" class="btn-secondary inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-200 bg-white/80 px-4 py-2 text-sm font-semibold text-stone-700">
+                    <i data-lucide="arrow-left" class="icon-sm"></i>
+                    <span>返回</span>
                 </a>
                 {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- 主内容 -->
-    <main class="max-w-4xl mx-auto px-4 py-6">
+    <main class="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-9">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- 浮动添加按钮（仅在首页显示） -->
     {% if request.url.path == "/" %}
-    <a href="/add"
-       class="fixed bottom-6 right-6 w-14 h-14 bg-orange-500 text-white rounded-full shadow-lg
-              flex items-center justify-center text-3xl hover:bg-orange-600 hover:shadow-xl
-              transition-all active:scale-95 z-50">
-        +
+    <a href="/add" class="fab fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-xl" aria-label="添加美食记录">
+        <i data-lucide="plus" class="h-7 w-7"></i>
     </a>
     {% endif %}
+    <script>
+        if (window.lucide) window.lucide.createIcons();
+    </script>
 </body>
 </html>

@@ -4,9 +4,11 @@
 
 **Goal:** 构建一个可本地运行的美食记录 Web 应用，支持菜品增删改查、3D 地球可视化和响应式适配。
 
-**Architecture:** FastAPI + Jinja2 模板渲染 + SQLite 数据库。前端使用 Tailwind CSS (CDN) 做响应式布局，Three.js (CDN) 渲染 3D 地球。照片上传后自动生成缩略图，列表和地球视图使用缩略图提升性能。
+**Architecture:** FastAPI + Jinja2 模板渲染 + SQLite 数据库。前端使用 Tailwind CSS (CDN) 做响应式布局，CesiumJS (CDN) 渲染专业 3D 地球和可缩放地图图层。照片上传后自动生成缩略图，列表和地球视图使用缩略图提升性能。
 
-**Tech Stack:** Python 3.10+, FastAPI, Uvicorn, SQLite3, Jinja2, Tailwind CSS, Three.js, Pillow (缩略图)
+**Tech Stack:** Python 3.10+, FastAPI, Uvicorn, SQLite3, Jinja2, Tailwind CSS, CesiumJS, Pillow (缩略图)
+
+> Update: Task 8 中原 Three.js 地球实现已被 CesiumJS 方案替代。实际实现以 `foofie/templates/globe.html` 当前版本为准：Cesium Viewer + 可切换底图影像层 + 美食点位数据层 + 评分过滤。
 
 ---
 

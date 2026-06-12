@@ -1,54 +1,399 @@
-/* 星星评分 */
-.star-rating input {
-    display: none;
+.app-shell {
+    background:
+        radial-gradient(circle at 15% 0%, rgba(249, 115, 22, 0.10), transparent 28rem),
+        linear-gradient(180deg, #fffaf3 0%, #faf8f4 42%, #f5f3ef 100%);
 }
-.star-rating label {
-    font-size: 1.5rem;
-    color: #ddd;
-    cursor: pointer;
-    transition: color 0.15s;
+
+.brand-mark {
+    display: inline-flex;
+    width: 2.25rem;
+    height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.55rem;
+    background: #f97316;
+    color: white;
+    font-weight: 800;
+    box-shadow: 0 10px 24px rgba(249, 115, 22, 0.26);
 }
-.star-rating label:hover,
-.star-rating label:hover ~ label,
-.star-rating input:checked ~ label {
-    color: #f59e0b;
+
+.icon-sm {
+    width: 1rem;
+    height: 1rem;
 }
+
+.section-kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: #ea580c;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-danger {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 0.5rem;
+    padding: 0.58rem 0.95rem;
+    font-size: 0.875rem;
+    font-weight: 650;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-primary {
+    background: #f97316;
+    color: white;
+    box-shadow: 0 12px 24px rgba(249, 115, 22, 0.23);
+}
+
+.btn-primary:hover {
+    background: #ea580c;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    border: 1px solid rgba(120, 113, 108, 0.22);
+    background: rgba(255, 255, 255, 0.72);
+    color: #44403c;
+}
+
+.btn-secondary:hover {
+    border-color: rgba(249, 115, 22, 0.32);
+    background: white;
+}
+
+.btn-ghost {
+    color: #57534e;
+    background: #f5f5f4;
+}
+
+.btn-ghost:hover {
+    background: #e7e5e4;
+}
+
+.btn-danger {
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.btn-danger:hover {
+    background: #fee2e2;
+}
+
+.fab {
+    position: fixed;
+    right: 1.35rem;
+    bottom: 1.35rem;
+    z-index: 50;
+    display: flex;
+    width: 3.4rem;
+    height: 3.4rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #f97316;
+    color: white;
+    box-shadow: 0 16px 34px rgba(249, 115, 22, 0.34);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.fab:hover {
+    background: #ea580c;
+    transform: translateY(-2px);
+}
+
+.view-toolbar,
+.form-panel,
+.detail-panel,
+.restaurant-card {
+    border: 1px solid rgba(214, 211, 209, 0.75);
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 18px 46px rgba(87, 83, 78, 0.08);
+    backdrop-filter: blur(18px);
+}
+
+.view-toolbar {
+    border-radius: 0.75rem;
+    padding: 0.85rem;
+}
+
+.segmented-control {
+    display: inline-flex;
+    width: 100%;
+    max-width: 20rem;
+    gap: 0.25rem;
+    border-radius: 0.55rem;
+    background: #f5f5f4;
+    padding: 0.25rem;
+}
+
+.segment {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 0.42rem;
+    padding: 0.55rem 0.85rem;
+    color: #78716c;
+    font-size: 0.875rem;
+    font-weight: 650;
+}
+
+.segment.is-active {
+    background: white;
+    color: #1c1917;
+    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.08);
+}
+
+.search-form {
+    display: flex;
+    min-height: 2.7rem;
+    flex: 1;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 0.55rem;
+    border: 1px solid #e7e5e4;
+    background: white;
+    padding: 0 0.35rem 0 0.85rem;
+}
+
+.search-form input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: #1c1917;
+    font-size: 0.9rem;
+    outline: 0;
+}
+
+.search-form button {
+    border-radius: 0.42rem;
+    background: #1c1917;
+    color: white;
+    padding: 0.48rem 0.78rem;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.chip,
+.chip-muted {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 999px;
+    padding: 0.26rem 0.62rem;
+    font-size: 0.75rem;
+    font-weight: 650;
+}
+
+.chip {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.chip.is-active {
+    background: #f97316;
+    color: white;
+}
+
+.chip-muted {
+    background: #e7e5e4;
+    color: #57534e;
+}
+
+.record-card {
+    display: block;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(214, 211, 209, 0.72);
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 12px 32px rgba(87, 83, 78, 0.08);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.record-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(249, 115, 22, 0.32);
+    box-shadow: 0 20px 44px rgba(87, 83, 78, 0.13);
+}
+
+.record-thumb {
+    display: flex;
+    aspect-ratio: 16 / 10;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fff7ed, #f5f5f4);
+}
+
+.record-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rating-dots {
+    display: inline-flex;
+    gap: 0.22rem;
+}
+
+.rating-dots span {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 999px;
+    background: #d6d3d1;
+}
+
+.rating-dots span.on {
+    background: #f97316;
+}
+
+.empty-state {
+    border-radius: 0.75rem;
+    border: 1px dashed #d6d3d1;
+    background: rgba(255, 255, 255, 0.58);
+    padding: 4rem 1rem;
+    text-align: center;
+}
+
+.restaurant-card {
+    overflow: hidden;
+    border-radius: 0.75rem;
+}
+
+.restaurant-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    border-radius: 0.55rem;
+    padding: 0.7rem;
+    transition: background 0.15s ease;
+}
+
+.restaurant-row:hover {
+    background: #fafaf9;
+}
+
+.form-panel,
+.detail-panel {
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+}
+
+.field-group label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #57534e;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.input-control {
+    width: 100%;
+    border-radius: 0.55rem;
+    border: 1px solid #d6d3d1;
+    background: white;
+    padding: 0.7rem 0.85rem;
+    color: #1c1917;
+    outline: 0;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-control:focus {
+    border-color: #fb923c;
+    box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.18);
+}
+
+.location-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-radius: 0.65rem;
+    border: 1px solid #e7e5e4;
+    background: #fafaf9;
+    padding: 0.8rem;
+}
+
+.file-control {
+    width: 100%;
+    color: #57534e;
+    font-size: 0.875rem;
+}
+
+.file-control::file-selector-button {
+    margin-right: 1rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: #fff7ed;
+    color: #c2410c;
+    padding: 0.62rem 0.9rem;
+    font-weight: 700;
+}
+
 .star-rating {
     direction: rtl;
     display: inline-flex;
-    gap: 2px;
+    gap: 0.16rem;
 }
 
-/* 卡片悬停效果 */
-.record-card {
-    transition: transform 0.15s, box-shadow 0.15s;
+.star-rating input {
+    display: none;
 }
-.record-card:hover {
+
+.star-rating label {
+    color: #d6d3d1;
+    cursor: pointer;
+    font-size: 2rem;
+    line-height: 1;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+    color: #f97316;
+}
+
+.star-rating label:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-/* 标签气泡 */
-.tag-badge {
-    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-medium;
+.detail-item {
+    border-radius: 0.65rem;
+    background: #fafaf9;
+    padding: 1rem;
 }
 
-/* 3D 地球全屏 */
-.globe-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 10;
+.detail-item span {
+    display: block;
+    color: #78716c;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
-/* 移动端适配 */
+.detail-item strong {
+    display: block;
+    margin-top: 0.3rem;
+    color: #1c1917;
+    font-size: 1rem;
+}
+
 @media (max-width: 767px) {
-    .star-rating label {
-        font-size: 1.8rem; /* 移动端点击区域更大 */
+    .location-panel {
+        align-items: stretch;
+        flex-direction: column;
     }
-    .record-card {
-        margin-bottom: 0.75rem;
+
+    .segmented-control {
+        max-width: none;
     }
 }
