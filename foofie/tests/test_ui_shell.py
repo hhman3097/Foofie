@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -34,6 +35,15 @@ class UiShellTests(unittest.TestCase):
         html = response.text
         self.assertIn("globe-control-shell", html)
         self.assertIn("layer-panel", html)
+
+    def test_record_card_template_avoids_layout_breaking_nested_links(self):
+        template = Path("foofie/templates/index.html").read_text()
+
+        self.assertIn("<article class=\"record-card", template)
+        self.assertNotIn("<a href=\"/record/{{ r.id }}\" class=\"record-card", template)
+        self.assertIn("class=\"map-link inline-flex items-center justify-center\"", template)
+        self.assertIn("★", template)
+        self.assertIn("☆", template)
 
 
 if __name__ == "__main__":

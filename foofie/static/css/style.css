@@ -211,6 +211,8 @@
 .record-card {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    height: 100%;
     overflow: hidden;
     border-radius: 0.75rem;
     border: 1px solid rgba(214, 211, 209, 0.72);
@@ -241,14 +243,38 @@
 
 .rating-dots {
     display: inline-flex;
-    gap: 2px;
-    font-size: 0.9rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.08rem;
     color: #d6d3d1;
-    letter-spacing: 1px;
+    font-size: 0.95rem;
+    line-height: 1;
 }
 
-.rating-dots .star-on {
-    color: #eab308;
+.rating-dots span {
+    display: block;
+    width: 0.82rem;
+    text-align: center;
+}
+
+.rating-dots span.is-active {
+    color: #f97316;
+}
+
+.map-link {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    border-radius: 0.45rem;
+    background: #eef6ff;
+    color: #2563eb;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.map-link:hover {
+    background: #dbeafe;
+    color: #1d4ed8;
+    transform: translateY(-1px);
 }
 
 .empty-state {
