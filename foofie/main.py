@@ -116,7 +116,10 @@ async def add_submit(
         valid, err = validate_photo(photo)
         if not valid:
             raise HTTPException(400, err)
-        photo_path, thumbnail_path = await save_photo(photo)
+        try:
+            photo_path, thumbnail_path = await save_photo(photo)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
     record_id = insert_record(
         dish_name=dish_name,
@@ -190,7 +193,10 @@ async def edit_submit(
             raise HTTPException(400, err)
         # 删除旧照片
         delete_photo(photo_path, thumbnail_path)
-        photo_path, thumbnail_path = await save_photo(photo)
+        try:
+            photo_path, thumbnail_path = await save_photo(photo)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
     update_record(
         record_id=record_id,

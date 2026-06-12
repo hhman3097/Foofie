@@ -5,7 +5,7 @@ from fastapi import UploadFile
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 THUMBNAIL_SIZE = (300, 300)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +34,7 @@ async def save_photo(file: UploadFile) -> tuple[str, str]:
 
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE:
-        raise ValueError(f"文件过大，超过 5MB 限制")
+        raise ValueError(f"文件过大，超过 10MB 限制")
 
     with open(filepath, "wb") as f:
         f.write(contents)
