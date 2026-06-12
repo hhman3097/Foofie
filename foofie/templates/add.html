@@ -311,28 +311,36 @@ function openMapPicker() {
     }
 }
 
-// 地图选点里的搜索功能
+// 地图选点里的搜索功能（POI 搜索，支持店名）
 function pickerSearch() {
     var mp = window._mapPicker;
     var q = document.getElementById('picker-search').value.trim();
     if (!q || !mp || !mp.map) return;
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://restapi.amap.com/v3/geocode/geo?key=da871d468999004045882e999bcef299' +
-        '&address=' + encodeURIComponent(q) + '&output=JSON');
+    xhr.open('GET', 'https://restapi.amap.com/v3/place/text?key=da871d468999004045882e999bcef299' +
+        '&keywords=' + encodeURIComponent(q) + '&output=JSON&offset=5');
     xhr.onload = function () {
         try {
             var d = JSON.parse(xhr.responseText);
-            if (d.status === '1' && d.geocodes && d.geocodes.length > 0) {
-                var loc = d.geocodes[0].location.split(',');
+            if (d.status === '1' && d.pois && d.pois.length > 0) {
+                var poi = d.pois[0];
+                var loc = poi.location.split(',');
                 var lng = parseFloat(loc[0]), lat = parseFloat(loc[1]);
                 mp.map.setCenter([lng, lat]);
-                mp.map.setZoom(16);
+                mp.map.setZoom(17);
                 mp.marker.setPosition([lng, lat]);
                 mp.pickedLng = lng;
                 mp.pickedLat = lat;
-                document.getElementById('picker-coords').textContent = d.geocodes[0].formatted_address || (lat.toFixed(6) + ', ' + lng.toFixed(6));
+                document.getElementById('picker-coords').textContent = poi.name + ' ' + (poi.address || '');
+                // 显示所有搜索结果提示
+                if (d.pois.length > 1) {
+                    var list = d.pois.slice(0, 5).map(function(p, i) {
+                        return (i+1) + '. ' + p.name + ' ' + (p.address || '');
+                    }).join('\n');
+                    console.log('搜索结果:\n' + list);
+                }
             } else {
-                alert('未找到该地点');
+                alert('未找到该地点，试试更具体的关键词');
             }
         } catch (e) {}
     };
