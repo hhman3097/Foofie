@@ -205,41 +205,52 @@ function getLocation() {
     }
 
     try {
+        // 先快速低精度，再升级高精度
         navigator.geolocation.getCurrentPosition(function (pos) {
             setCoords(pos.coords.longitude, pos.coords.latitude);
             if (pos.coords.accuracy) {
                 status.textContent += ' (精度 ±' + Math.round(pos.coords.accuracy) + 'm)';
             }
-        }, function (err) {
-            status.textContent = '定位失败，请点击「重新定位」按钮';
-            var msg = '请点击下方「重新定位」按钮手动触发定位';
-            if (err.code === 1) msg = '定位权限被拒绝，请在浏览器设置中允许定位，然后点击「重新定位」';
-            if (err.code === 2 || err.code === 3) msg = '定位超时，请点击「重新定位」重试';
-            var errorEl = document.getElementById('location-error');
-            errorEl.textContent = msg;
-            errorEl.classList.remove('hidden');
-            ipFallback();
-        }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
+        }, function () {
+            // 低精度也失败了，尝试高精度
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                setCoords(pos.coords.longitude, pos.coords.latitude);
+                if (pos.coords.accuracy) {
+                    status.textContent += ' (精度 ±' + Math.round(pos.coords.accuracy) + 'm)';
+                }
+            }, function (err) {
+                status.textContent = '定位失败，请点击「重新定位」按钮';
+                var msg = '请点击下方「重新定位」按钮手动触发定位';
+                if (err.code === 1) msg = '定位权限被拒绝，请在浏览器设置中允许定位，然后点击「重新定位」';
+                if (err.code === 2 || err.code === 3) msg = '定位超时，请点击「重新定位」重试';
+                var errorEl = document.getElementById('location-error');
+                errorEl.textContent = msg;
+                errorEl.classList.remove('hidden');
+                ipFallback();
+            }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+        }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 });
     } catch (e) {
         status.textContent = '请点击「重新定位」按钮获取位置';
         ipFallback();
     }
 }
 
-// IP 定位兜底：拿一个城市级位置，免得一直默认北京
+// IP 定位兜底
 function ipFallback() {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', 'https://restapi.amap.com/v3/ip?key=da871d468999004045882e999bcef299&output=JSON');
     xhr.onload = function () {
         try {
             var d = JSON.parse(xhr.responseText);
-            if (d.status === '1' && d.rectangle) {
-                // rectangle 格式: "minLng,minLat;maxLng,maxLat"
-                var parts = d.rectangle.split(';')[0].split(',');
+            // rectangle 可能是空数组 [] 或字符串 "lng,lat;lng,lat"
+            var rect = d.rectangle;
+            if (typeof rect === 'string' && rect.length > 0) {
+                var parts = rect.split(';')[0].split(',');
                 var lng = parseFloat(parts[0]), lat = parseFloat(parts[1]);
                 if (!isNaN(lng) && !isNaN(lat)) {
                     document.getElementById('latitude').value = lat;
                     document.getElementById('longitude').value = lng;
+                    document.getElementById('location-status').textContent = '已获取大致位置（IP定位）';
                 }
             }
         } catch (e) {}
