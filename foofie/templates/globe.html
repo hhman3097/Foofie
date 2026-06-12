@@ -379,7 +379,7 @@
             setTimeout(function () {
                 var gcj = wgs84ToGcj02(flyLng, flyLat);
                 viewer.camera.flyTo({
-                    destination: Cesium.Cartesian3.fromDegrees(gcj[0], gcj[1], 8000),
+                    destination: Cesium.Cartesian3.fromDegrees(gcj[0], gcj[1], FLY_TO_HEIGHT),
                     duration: 2,
                 });
             }, 1500);
