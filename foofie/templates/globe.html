@@ -4,272 +4,243 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌍 Foofie 美食地球</title>
-    <!-- CesiumJS -->
-    <link href="https://unpkg.com/cesium@1.120.0/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <script src="https://unpkg.com/cesium@1.120.0/Build/Cesium/Cesium.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css">
+    <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, system-ui, sans-serif; }
-        #cesium-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a1a; font-family: -apple-system, system-ui, sans-serif; }
+        #map { width: 100%; height: 100%; }
 
-        /* 隐藏 Cesium 默认控件 */
-        .cesium-viewer-bottom, .cesium-widget-credits,
-        .cesium-viewer-toolbar, .cesium-viewer-animationContainer,
-        .cesium-viewer-timelineContainer, .cesium-viewer-fullscreenContainer,
-        .cesium-sceneModePicker-wrapper, .cesium-home-button { display: none !important; }
+        /* 去掉 maplibre 默认 logo/attribution（保留 attribution 法律要求） */
+        .maplibregl-ctrl-attrib {
+            background: rgba(0,0,0,0.5) !important;
+            color: rgba(255,255,255,0.5) !important;
+            font-size: 10px !important;
+            padding: 2px 8px !important;
+            border-radius: 4px !important;
+        }
+        .maplibregl-ctrl-attrib a { color: rgba(255,255,255,0.6) !important; }
 
         #back-btn {
-            position: fixed; top: 20px; left: 20px; z-index: 100;
+            position: fixed; top: 20px; left: 20px; z-index: 10;
             background: rgba(0,0,0,0.6); color: white; border: none;
             padding: 10px 18px; border-radius: 24px; font-size: 14px;
-            cursor: pointer; backdrop-filter: blur(4px);
+            cursor: pointer; backdrop-filter: blur(6px);
         }
         #back-btn:hover { background: rgba(0,0,0,0.8); }
+
         #count-badge {
-            position: fixed; top: 20px; right: 20px; z-index: 100;
+            position: fixed; top: 20px; right: 20px; z-index: 10;
             background: rgba(0,0,0,0.6); color: white; padding: 8px 16px;
-            border-radius: 24px; font-size: 14px; backdrop-filter: blur(4px);
+            border-radius: 24px; font-size: 14px; backdrop-filter: blur(6px);
         }
 
-        /* 自定义弹窗 */
+        /* 弹窗 */
         #detail-popup {
             position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 100; background: rgba(10,10,10,0.92); backdrop-filter: blur(12px);
+            z-index: 10; background: rgba(10,10,10,0.92); backdrop-filter: blur(14px);
             color: white; padding: 20px 28px; border-radius: 20px;
             display: none; max-width: 360px; width: 90%; text-align: center;
             border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 36px rgba(0,0,0,0.5);
             cursor: pointer;
         }
         #detail-popup .dish-name { font-size: 20px; font-weight: 700; }
-        #detail-popup .restaurant { font-size: 14px; opacity: 0.7; }
+        #detail-popup .restaurant { font-size: 14px; opacity: 0.7; margin-top: 2px; }
         #detail-popup .rating { font-size: 16px; margin: 6px 0; }
-        #detail-popup .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; background: rgba(249,115,22,0.2); color: #fb923c; }
-        #detail-popup .comment { font-size: 13px; opacity: 0.6; margin-top: 6px; }
+        #detail-popup .tag {
+            display: inline-block; padding: 2px 10px; border-radius: 12px;
+            font-size: 12px; background: rgba(249,115,22,0.2); color: #fb923c;
+            margin-top: 2px;
+        }
+        #detail-popup .comment { font-size: 13px; opacity: 0.55; margin-top: 6px; }
         #detail-popup .goto {
             display: inline-block; margin-top: 10px; padding: 8px 24px;
             background: #f97316; color: white; border-radius: 24px;
-            text-decoration: none; font-size: 13px;
+            text-decoration: none; font-size: 13px; font-weight: 500;
         }
         #detail-popup .goto:hover { background: #ea580c; }
 
         #popup-backdrop {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 99; display: none;
+            z-index: 9; display: none;
         }
     </style>
 </head>
 <body>
-    <div id="cesium-container"></div>
+    <div id="map"></div>
     <button id="back-btn" onclick="window.location.href='/'">← 返回列表</button>
     <div id="count-badge">🌍 <span id="record-count">0</span> 道美食</div>
     <div id="popup-backdrop"></div>
     <div id="detail-popup"></div>
 
     <script>
-    // 配置 Cesium 资源路径
-    window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.120.0/Build/Cesium/';
-
-    async function initGlobe() {
-        // 使用 OpenStreetMap 瓦片（免费，无需 token，包含省市县边界和地名）
-        const viewer = new Cesium.Viewer('cesium-container', {
-            imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-                url: 'https://tile.openstreetmap.org/',
-                credit: '© OpenStreetMap contributors',
-                maximumLevel: 19,
-            }),
-            terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-            baseLayerPicker: false,
-            geocoder: false,
-            homeButton: false,
-            sceneModePicker: false,
-            navigationHelpButton: false,
-            animation: false,
-            timeline: false,
-            fullscreenButton: false,
-            vrButton: false,
-            infoBox: false,
-            selectionIndicator: false,
-            shadows: false,
-            shouldAnimate: false,
-        });
-
-        // 场景设置
-        const scene = viewer.scene;
-        scene.globe.enableLighting = false;
-        scene.globe.atmosphereBrightnessShift = 0.4;
-        scene.screenSpaceCameraController.minimumZoomDistance = 5000000;  // ~地球周长/8
-        scene.screenSpaceCameraController.maximumZoomDistance = 50000000;
-
-        // 初始视角：面向中国
-        viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(104.0, 35.0, 25000000),
-            orientation: {
-                heading: Cesium.Math.toRadians(0),
-                pitch: Cesium.Math.toRadians(-30),
-                roll: 0,
+    (async function() {
+        // ---- 初始化地图 ----
+        const map = new maplibregl.Map({
+            container: 'map',
+            projection: 'globe',
+            style: {
+                version: 8,
+                sources: {
+                    'osm': {
+                        type: 'raster',
+                        tiles: [
+                            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        ],
+                        tileSize: 256,
+                        attribution: '© OpenStreetMap',
+                        maxzoom: 19,
+                    }
+                },
+                layers: [
+                    { id: 'osm-layer', type: 'raster', source: 'osm' }
+                ]
             },
+            center: [104, 35],
+            zoom: 1.2,
+            minZoom: 1,
+            maxZoom: 18,
+            attributionControl: true,
+            renderWorldCopies: true,
         });
 
-        // 禁用自动旋转（用户拖拽控制）
-        scene.camera.controller.enableRotate = true;
-        scene.camera.controller.enableZoom = true;
-        scene.camera.controller.enableTilt = true;
+        // 星空背景（通过 canvas 覆盖）
+        const skyCanvas = document.createElement('canvas');
+        skyCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;';
+        skyCanvas.width = window.innerWidth;
+        skyCanvas.height = window.innerHeight;
+        const skyCtx = skyCanvas.getContext('2d');
+        skyCtx.fillStyle = '#0a0a1a';
+        skyCtx.fillRect(0, 0, skyCanvas.width, skyCanvas.height);
+        // 星星
+        for (let i = 0; i < 400; i++) {
+            const x = Math.random() * skyCanvas.width;
+            const y = Math.random() * skyCanvas.height;
+            const r = Math.random() * 1.2;
+            skyCtx.beginPath();
+            skyCtx.arc(x, y, r, 0, Math.PI * 2);
+            skyCtx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.5})`;
+            skyCtx.fill();
+        }
+        // 大气光晕（顶部弧形渐变）
+        const glowGrad = skyCtx.createRadialGradient(
+            skyCanvas.width / 2, skyCanvas.height / 2,
+            Math.min(skyCanvas.width, skyCanvas.height) * 0.35,
+            skyCanvas.width / 2, skyCanvas.height / 2,
+            Math.min(skyCanvas.width, skyCanvas.height) * 1.2
+        );
+        glowGrad.addColorStop(0, 'rgba(10,10,26,0)');
+        glowGrad.addColorStop(0.6, 'rgba(10,10,26,0.3)');
+        glowGrad.addColorStop(1, 'rgba(10,10,26,0.95)');
+        skyCtx.fillStyle = glowGrad;
+        skyCtx.fillRect(0, 0, skyCanvas.width, skyCanvas.height);
 
-        // 移除默认双击缩放行为，避免干扰标记点击
-        scene.screenSpaceCameraController.enableLook = false;
+        document.body.appendChild(skyCanvas);
 
-        // ---- 加载美食标记 ----
-        let selectedEntity = null;
+        // 自适应星空
+        window.addEventListener('resize', () => {
+            skyCanvas.width = window.innerWidth;
+            skyCanvas.height = window.innerHeight;
+        });
+
+        // 等地图加载完
+        await new Promise(resolve => map.once('load', resolve));
+
+        // 淡入效果
+        map.setPaintProperty('osm-layer', 'raster-opacity', 0);
+        const fadeStart = performance.now();
+        function fadeIn(now) {
+            const t = Math.min(1, (now - fadeStart) / 800);
+            map.setPaintProperty('osm-layer', 'raster-opacity', t);
+            if (t < 1) requestAnimationFrame(fadeIn);
+        }
+        requestAnimationFrame(fadeIn);
+
+        console.log('[Foofie Globe] MapLibre globe ready');
+
+        // ---- 加载美食数据 ----
         let popupActive = false;
         const popupEl = document.getElementById('detail-popup');
         const backdropEl = document.getElementById('popup-backdrop');
-        const recordCount = document.getElementById('record-count');
+        const countEl = document.getElementById('record-count');
 
-        // 标记样式（根据评分）
-        function getMarkerColor(rating) {
-            if (rating <= 2) return Cesium.Color.RED;
-            if (rating <= 3) return Cesium.Color.ORANGE;
-            if (rating <= 4) return Cesium.Color.LIME;
-            return Cesium.Color.CYAN;
+        function markerColor(rating) {
+            if (rating <= 2) return '#ff4444';
+            if (rating <= 3) return '#ffaa44';
+            if (rating <= 4) return '#44ff88';
+            return '#00ffcc';
         }
 
-        function getMarkerSize(rating) {
-            return 10 + rating * 2;
+        function createMarkerSVG(rating) {
+            const color = markerColor(rating);
+            const size = 16 + rating * 3;
+            return `<?xml version="1.0" encoding="UTF-8"?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                <defs>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="2" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${color}" opacity="0.3" filter="url(#glow)"/>
+                <circle cx="${size/2}" cy="${size/2}" r="${size/4}" fill="${color}"/>
+                <circle cx="${size/2 - size/10}" cy="${size/2 - size/10}" r="${size/10}" fill="white" opacity="0.5"/>
+            </svg>`;
         }
 
-        // 添加悬浮标记（billboard + 光晕 circle）
-        function addFoodMarker(data, entityCollection) {
-            const color = getMarkerColor(data.rating);
-            const size = getMarkerSize(data.rating);
-
-            // 底部脉冲圆
-            const entity = entityCollection.add({
-                id: 'food-' + data.id,
-                position: Cesium.Cartesian3.fromDegrees(data.longitude, data.latitude),
-                billboard: {
-                    image: createMarkerImage(size, color),
-                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-                    scale: 1.0,
-                    disableDepthTestDistance: 1000000,
-                },
-                properties: {
-                    foodData: JSON.stringify(data),
-                },
-            });
-            return entity;
+        function dataURL(svg) {
+            return 'data:image/svg+xml,' + encodeURIComponent(svg);
         }
 
-        // 生成标记图片（Canvas）
-        function createMarkerImage(size, color) {
-            const canvas = document.createElement('canvas');
-            const w = size * 4;
-            const h = size * 4;
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-
-            // 外围光晕
-            const gradient = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
-            const cssColor = color.toCssColorString();
-            gradient.addColorStop(0, cssColor + '80');
-            gradient.addColorStop(0.3, cssColor + '40');
-            gradient.addColorStop(1, cssColor + '00');
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(w/2, h/2, w/2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 核心圆
-            ctx.fillStyle = cssColor;
-            ctx.beginPath();
-            ctx.arc(w/2, h/2, size * 0.8, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 白色高光
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.beginPath();
-            ctx.arc(w/2 - size*0.2, h/2 - size*0.2, size * 0.3, 0, Math.PI * 2);
-            ctx.fill();
-
-            return canvas;
-        }
-
-        // 加载数据
         try {
             const resp = await fetch('/api/records');
             const records = await resp.json();
-            recordCount.textContent = records.length;
+            countEl.textContent = records.length;
 
-            // 添加标记到 entities
-            records.forEach(r => addFoodMarker(r, viewer.entities));
+            records.forEach(d => {
+                const el = document.createElement('div');
+                const marker = new maplibregl.Marker({
+                    element: el,
+                    anchor: 'center',
+                });
+                el.style.cssText = `width:${20+d.rating*3}px;height:${20+d.rating*3}px;background:url(${dataURL(createMarkerSVG(d.rating))}) center/contain no-repeat;cursor:pointer;`;
+                el.title = `${d.dish_name} — ${d.restaurant}`;
+
+                marker.setLngLat([d.longitude, d.latitude]).addTo(map);
+
+                el.addEventListener('click', () => {
+                    map.flyTo({ center: [d.longitude, d.latitude], zoom: 10, duration: 800 });
+                    showPopup(d);
+                });
+            });
+
             console.log('[Foofie Globe] Loaded', records.length, 'records');
         } catch (err) {
-            console.error('[Foofie Globe] Failed:', err);
+            console.error('[Foofie Globe] Load error:', err);
         }
 
-        // ---- 交互 ----
-        const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
-
-        // Hover 检测
-        handler.setInputAction(function(movement) {
-            if (popupActive) {
-                document.body.style.cursor = 'default';
-                return;
-            }
-            const picked = scene.pick(movement.endPosition);
-            if (Cesium.defined(picked) && picked.id && picked.id.id && picked.id.id.startsWith('food-')) {
-                document.body.style.cursor = 'pointer';
-            } else {
-                document.body.style.cursor = 'grab';
-            }
-        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-
-        // 点击检测
-        handler.setInputAction(function(click) {
-            if (popupActive) {
-                hidePopup();
-                return;
-            }
-
-            const picked = scene.pick(click.position);
-            if (Cesium.defined(picked) && picked.id && picked.id.properties) {
-                const props = picked.id.properties;
-                if (props.foodData) {
-                    const data = JSON.parse(props.foodData.getValue());
-                    showPopup(data);
-                    // 飞行到标记位置
-                    viewer.camera.flyTo({
-                        destination: Cesium.Cartesian3.fromDegrees(data.longitude, data.latitude, 500000),
-                        duration: 0.8,
-                        orientation: {
-                            heading: Cesium.Math.toRadians(0),
-                            pitch: Cesium.Math.toRadians(-45),
-                            roll: 0,
-                        },
-                    });
-                    return;
-                }
-            }
-        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-        function showPopup(data) {
+        // ---- 弹窗逻辑 ----
+        function showPopup(d) {
             popupActive = true;
-            const stars = '⭐'.repeat(data.rating);
-            const color = getMarkerColor(data.rating);
+            const stars = '⭐'.repeat(d.rating);
             popupEl.innerHTML = `
-                <div class="dish-name">${data.dish_name}</div>
-                <div class="restaurant">🏪 ${data.restaurant}</div>
+                <div class="dish-name">${d.dish_name}</div>
+                <div class="restaurant">🏪 ${d.restaurant}</div>
                 <div class="rating">${stars}</div>
-                <div><span class="tag">${data.cuisine_tag}</span></div>
-                ${data.comment ? `<div class="comment">💬 ${data.comment}</div>` : ''}
-                <a href="/record/${data.id}" class="goto">查看完整信息 →</a>
+                <div><span class="tag">${d.cuisine_tag}</span></div>
+                ${d.comment ? `<div class="comment">💬 ${d.comment}</div>` : ''}
+                <a href="/record/${d.id}" class="goto">查看完整信息 →</a>
             `;
             popupEl.style.display = 'block';
             backdropEl.style.display = 'block';
-
-            popupEl.onclick = (e) => {
-                if (e.target.tagName !== 'A') window.location.href = '/record/' + data.id;
+            popupEl.onclick = function(e) {
+                if (e.target.tagName !== 'A') window.location.href = '/record/' + d.id;
             };
         }
 
@@ -279,30 +250,16 @@
             popupActive = false;
         }
 
-        backdropEl.addEventListener('pointerdown', hidePopup);
+        backdropEl.addEventListener('click', hidePopup);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePopup(); });
 
-        // 键盘 ESC 关闭
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') hidePopup();
+        // 点击地图空白关闭弹窗
+        map.on('click', e => {
+            if (popupActive && !e.originalEvent.defaultPrevented) {
+                hidePopup();
+            }
         });
-
-        // 自适应
-        window.addEventListener('resize', () => {
-            viewer.resize();
-        });
-    }
-
-    initGlobe().catch(err => {
-        console.error('[Foofie Globe] Init failed:', err);
-        document.body.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#ff6b6b;font-family:sans-serif;flex-direction:column;gap:12px;">
-                <div style="font-size:48px;">🌍</div>
-                <div>3D 地球加载失败</div>
-                <div style="font-size:13px;opacity:0.6;">${err.message}</div>
-                <a href="/" style="color:#f97316;margin-top:8px;">← 返回首页</a>
-            </div>
-        `;
-    });
+    })();
     </script>
 </body>
 </html>
